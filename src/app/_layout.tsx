@@ -1,8 +1,23 @@
 import "../theme/global.css";
-import { Slot } from "expo-router";
+import { Stack } from 'expo-router';
+import { ToastProvider } from '../contexts/ToastContext';
+import { useCustomFonts } from '../assets/fonts';
+import { View } from 'react-native';
 
-export default function layout(){
+export default function Layout() {
+    const fontsLoaded = useCustomFonts();
+
+    if (!fontsLoaded) {
+        return <View />;
+    }
+
     return (
-        <Slot />
+        <ToastProvider>
+            <Stack
+                screenOptions={{
+                    headerShown: false,
+                }}
+            />
+        </ToastProvider>
     )
 }

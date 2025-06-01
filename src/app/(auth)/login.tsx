@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import InputTeste from "../../components/InputComponent";
+import { useToast } from "../../contexts/ToastContext";
 
 export default function Login() {
-  const router = useRouter();
+  const { showToast } = useToast();
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
   const [cpfError, setCpfError] = useState("");
@@ -32,15 +33,25 @@ export default function Login() {
       return;
     }
 
-    
     try {
-     
+      // Simulando uma chamada de API
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Mock de usuário para teste
+      const mockUser = {
+        nome: "Usuário Teste",
+        cargo: "Perito",
+        cpf: cpf
+      };
+
+      // Salvando dados do usuário
+      await AsyncStorage.setItem('@dentfy:usuario', JSON.stringify(mockUser));
       
-      router.push("/CasosPerito");
+      showToast('Login realizado com sucesso!', 'success');
+      router.replace('/(app)/casos');
     } catch (err) {
       setError("Erro ao fazer login. Tente novamente.");
+      showToast('Erro ao fazer login', 'error');
     } finally {
       setLoading(false);
     }
