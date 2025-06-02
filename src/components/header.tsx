@@ -18,7 +18,7 @@ export default function HeaderPerito({ showBackButton = false }: HeaderProps) {
         <View className="flex-row items-center justify-between px-6 py-3">
           <View className="flex-row items-center gap-4">
             {showBackButton ? (
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => router.back()}
                 className="p-2"
               >
@@ -29,13 +29,13 @@ export default function HeaderPerito({ showBackButton = false }: HeaderProps) {
                 <View className="w-12 h-12">
                   <Image
                     source={require('../assets/logo.png')}
-                    className="w-full h-full"
+                    style={{ width: 48, height: 48 }}
                     resizeMode="contain"
                   />
                 </View>
                 <View className="gap-0.5">
                   <Text className="text-amber-100 text-2xl font-bold">
-                    Dent<Text className="text-amber-500">Fy</Text>
+                    Denti<Text className="text-amber-500">Fy</Text>
                   </Text>
                   <Text className="text-amber-100/70 text-sm">
                     Identificação Criminal
