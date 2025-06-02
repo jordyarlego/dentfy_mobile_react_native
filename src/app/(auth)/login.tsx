@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import InputTeste from "../../components/InputComponent";
 import { useToast } from "../../contexts/ToastContext";
+import api from "../../services/api";
 
 export default function Login() {
   const { showToast } = useToast();
@@ -21,12 +22,14 @@ export default function Login() {
     return "";
   };
 
+
   const handleSubmit = async () => {
     setError("");
     setCpfError("");
     setLoading(true);
 
-    const cpfValidationError = validateCpf(cpf);
+    const cleanedCpf = cpf.replace(/[^\d]+/g, "");
+    const cpfValidationError = validateCpf(cleanedCpf);
     if (cpfValidationError) {
       setCpfError(cpfValidationError);
       setLoading(false);
@@ -34,28 +37,49 @@ export default function Login() {
     }
 
     try {
-      // Simulando uma chamada de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock de usuário para teste
-      const mockUser = {
-        nome: "Usuário Teste",
-        cargo: "Perito",
-        cpf: cpf
-      };
+      const response = await fetchWithTimeout(
+        api.post("/api/users/login", {
+          cpf: cleanedCpf,
+          password,
+        })
+      );
 
-      // Salvando dados do usuário
-      await AsyncStorage.setItem('@dentfy:usuario', JSON.stringify(mockUser));
-      
-      showToast('Login realizado com sucesso!', 'success');
-      router.replace('/(app)/casos');
-    } catch (err) {
-      setError("Erro ao fazer login. Tente novamente.");
-      showToast('Erro ao fazer login', 'error');
+      const { token, user } = response.data;
+
+      await AsyncStorage.setItem("token", token);
+      await AsyncStorage.setItem("@dentfy:usuario", JSON.stringify({
+        nome: user.name,
+        cargo:
+          user.role === "admin"
+            ? "Administrador"
+            : user.role === "perito"
+              ? "Perito Criminal"
+              : "Assistente",
+      }));
+
+      showToast("Login realizado com sucesso!", "success");
+      router.replace("/(app)/casos");
+    } catch (err: any) {
+      const message =
+        err.message === "Tempo de resposta excedido"
+          ? "Servidor demorou para responder. Tente novamente."
+          : err.response?.data?.message || "Erro ao fazer login.";
+
+      setError(message);
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
   };
+  const fetchWithTimeout = (promise: Promise<any>, timeoutMs = 5000) => {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Tempo de resposta excedido")), timeoutMs)
+      )
+    ]);
+  };
+
 
   return (
     <ScrollView className="flex-1 bg-[#12212B]">
@@ -100,9 +124,8 @@ export default function Login() {
             <TouchableOpacity
               onPress={handleSubmit}
               disabled={loading}
-              className={`w-[200px] h-[50px] bg-[#01777B] rounded-xl mx-auto items-center justify-center ${
-                loading ? "opacity-50" : ""
-              }`}
+              className={`w-[200px] h-[50px] bg-[#01777B] rounded-xl mx-auto items-center justify-center ${loading ? "opacity-50" : ""
+                }`}
             >
               {loading ? (
                 <ActivityIndicator color="white" />
@@ -115,4 +138,4 @@ export default function Login() {
       </View>
     </ScrollView>
   );
-} 
+}
