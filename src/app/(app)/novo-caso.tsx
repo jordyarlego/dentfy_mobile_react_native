@@ -9,83 +9,65 @@ import HeaderPerito from '../../components/header';
 import { useToast } from '../../contexts/ToastContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Caso } from '../../types/caso';
+import { criarCaso } from '../../services/caso';
+import type { CasoCreateData } from '../../app/(app)/casos';
 
-interface CasoData extends Omit<Caso, '_id' | 'vitimas' | 'evidencias' | 'peritos'> {
-  vitimas?: Caso['vitimas'];
-  evidencias?: Caso['evidencias'];
-  peritos?: Caso['peritos'];
-}
-
-const STORAGE_KEY = '@dentify_casos';
+// Remova a interface CasoData declarada dentro do componente
 
 export default function NovoCaso() {
   const router = useRouter();
   const { showToast } = useToast();
-  const [formData, setFormData] = useState<CasoData>({
+
+  const [formData, setFormData] = useState<CasoCreateData>({
     titulo: '',
     descricao: '',
     responsavel: '',
-    status: 'em_andamento',
+    status: 'Em andamento',  // <-- respeite o enum exato do tipo
+    tipo: 'Vitima',          // <-- idem
     dataAbertura: new Date().toISOString().split('T')[0],
-    sexo: 'masculino',
+    sexo: 'Masculino',       // idem
     local: '',
-    vitimas: [],
-    evidencias: [],
-    peritos: [],
   });
+
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (field: keyof CasoData, value: string) => {
+  const handleChange = (field: keyof CasoCreateData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async () => {
+ const handleSubmit = async () => {
     setError(null);
 
-    // Validações
     if (!formData.titulo.trim()) {
       setError("O título é obrigatório");
       return;
     }
-
     if (!formData.descricao.trim()) {
       setError("A descrição é obrigatória");
       return;
     }
-
     if (!formData.responsavel.trim()) {
       setError("O responsável é obrigatório");
       return;
     }
-
     if (!formData.local.trim()) {
       setError("O local é obrigatório");
       return;
     }
 
     try {
-      // Busca casos existentes
-      const storedCasos = await AsyncStorage.getItem(STORAGE_KEY);
-      const casosExistentes = storedCasos ? JSON.parse(storedCasos) : [];
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        setError('Token de autenticação não encontrado.');
+        return;
+      }
 
-      // Cria novo caso
-      const novoCaso: Caso = {
-        _id: Date.now().toString(),
-        ...formData,
-        vitimas: formData.vitimas || [],
-        evidencias: formData.evidencias || [],
-        peritos: formData.peritos || [],
-      };
-
-      // Adiciona o novo caso à lista
-      const casosAtualizados = [novoCaso, ...casosExistentes];
-      
-      // Salva no AsyncStorage
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(casosAtualizados));
+      await criarCaso(formData, token);
 
       showToast('Caso criado com sucesso!', 'success');
       router.push('/casos');
     } catch (err) {
+      console.error(err);
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -93,6 +75,7 @@ export default function NovoCaso() {
       }
     }
   };
+
 
   return (
     <View className="flex-1 bg-gray-900">
