@@ -18,6 +18,8 @@ import ModalConfirmacao from '../../../components/caso/ModalConfirmacao';
 import FeedbackToast from '../../../components/caso/FeedbackToast';
 import { useToast } from '../../../contexts/ToastContext';
 import type { Caso, Vitima, Evidencia, Perito } from '../../../types/caso';
+import { Heading, Body } from '../../../components/Typography';
+import { colors } from '../../../theme/colors';
 
 const STORAGE_KEYS = {
   CASOS: '@dentify_casos',
@@ -278,54 +280,133 @@ export default function DetalhesCasoPage() {
 
   if (loading || !caso) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-900">
-        <Text style={{ color: '#9CA3AF' }}>Carregando...</Text>
+      <View className="flex-1 items-center justify-center bg-dentfyBackground">
+        <Body className="text-dentfyTextPrimary">Carregando...</Body>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-900">
+    <View className="flex-1 bg-dentfyBackground">
       <HeaderPerito showBackButton />
       
       <ScrollView className="flex-1">
-        <DetalhesCaso caso={caso} />
+        <View className="p-4">
+          <View className="flex-row items-center mb-4">
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="mr-4 p-2 rounded-full bg-dentfyGray800/30"
+            >
+              <Ionicons name="arrow-back" size={24} color={colors.dentfyAmber} />
+            </TouchableOpacity>
+            <Heading size="large" className="text-dentfyTextPrimary flex-1">
+              Detalhes do Caso
+            </Heading>
+          </View>
 
-        <View className="p-4 space-y-6">
-          <ListaVitimas
-            vitimas={caso.vitimas}
-            onAdd={() => setModalNovaVitima(true)}
-            onEdit={(vitima) => {
-              setVitimaSelecionada(vitima);
-              setModalEditarVitima(true);
-            }}
-            onDelete={(vitima) => {
-              setVitimaSelecionada(vitima);
-              setModalConfirmacao(true);
-            }}
-          />
+          <DetalhesCaso caso={caso} />
 
-          <ListaEvidencias
-            evidencias={caso.evidencias}
-            onAdd={() => setModalNovaEvidencia(true)}
-            onView={(evidencia) => {
-              setEvidenciaSelecionada(evidencia);
-              setModalDetalhesEvidencia(true);
-            }}
-            onDelete={(evidencia) => {
-              setEvidenciaSelecionada(evidencia);
-              setModalConfirmacao(true);
-            }}
-          />
+          {/* Seção de Vítimas */}
+          <View className="mb-6">
+            <View className="flex-row justify-between items-center mb-4">
+              <Heading size="medium" className="text-dentfyAmber">
+                Vítimas
+              </Heading>
+              <TouchableOpacity
+                onPress={() => setModalNovaVitima(true)}
+                className="p-2 rounded-full bg-dentfyAmber/10"
+              >
+                <Ionicons name="add" size={24} color={colors.dentfyAmber} />
+              </TouchableOpacity>
+            </View>
+            
+            {caso.vitimas.length === 0 ? (
+              <View className="bg-dentfyGray800/30 p-4 rounded-lg">
+                <Body className="text-dentfyTextPrimary text-center">
+                  Nenhuma vítima registrada
+                </Body>
+              </View>
+            ) : (
+              <View className="space-y-2">
+                {caso.vitimas.map((vitima) => {
+                  const idade = new Date().getFullYear() - new Date(vitima.dataNascimento).getFullYear();
+                  return (
+                    <View key={vitima._id} className="bg-dentfyGray800/30 p-4 rounded-lg">
+                      <Body className="text-dentfyTextPrimary">
+                        {vitima.nome} - {idade} anos
+                      </Body>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
 
-          {caso.peritos && Array.isArray(caso.peritos) && (
-            <ListaPeritos
-              peritos={caso.peritos}
-              onAdd={handleAddPerito}
-              onEdit={handleEditPerito}
-              onDelete={handleDeletePerito}
-            />
-          )}
+          {/* Seção de Evidências */}
+          <View className="mb-6">
+            <View className="flex-row justify-between items-center mb-4">
+              <Heading size="medium" className="text-dentfyAmber">
+                Evidências
+              </Heading>
+              <TouchableOpacity
+                onPress={() => setModalNovaEvidencia(true)}
+                className="p-2 rounded-full bg-dentfyAmber/10"
+              >
+                <Ionicons name="add" size={24} color={colors.dentfyAmber} />
+              </TouchableOpacity>
+            </View>
+            
+            {caso.evidencias.length === 0 ? (
+              <View className="bg-dentfyGray800/30 p-4 rounded-lg">
+                <Body className="text-dentfyTextPrimary text-center">
+                  Nenhuma evidência registrada
+                </Body>
+              </View>
+            ) : (
+              <View className="space-y-2">
+                {caso.evidencias.map((evidencia) => (
+                  <View key={evidencia._id} className="bg-dentfyGray800/30 p-4 rounded-lg">
+                    <Body className="text-dentfyTextPrimary">
+                      {evidencia.tipo} - {evidencia.descricao}
+                    </Body>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Seção de Peritos */}
+          <View className="mb-6">
+            <View className="flex-row justify-between items-center mb-4">
+              <Heading size="medium" className="text-dentfyAmber">
+                Peritos
+              </Heading>
+              <TouchableOpacity
+                onPress={() => setModalNovaVitima(true)}
+                className="p-2 rounded-full bg-dentfyAmber/10"
+              >
+                <Ionicons name="add" size={24} color={colors.dentfyAmber} />
+              </TouchableOpacity>
+            </View>
+            
+            {caso.peritos.length === 0 ? (
+              <View className="bg-dentfyGray800/30 p-4 rounded-lg">
+                <Body className="text-dentfyTextPrimary text-center">
+                  Nenhum perito designado
+                </Body>
+              </View>
+            ) : (
+              <View className="space-y-2">
+                {caso.peritos.map((perito) => (
+                  <View key={perito._id} className="bg-dentfyGray800/30 p-4 rounded-lg">
+                    <Body className="text-dentfyTextPrimary">
+                      {perito.nome} - {perito.especialidade}
+                    </Body>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
       </ScrollView>
 

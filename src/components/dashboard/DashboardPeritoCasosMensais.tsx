@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
+import { colors } from '../../theme/colors';
 
 interface CasoPorTipo {
   tipo: string;
@@ -26,20 +27,20 @@ export default function DashboardPeritoCasosMensais({ casos, isLoading }: Props)
 
   if (isLoading) {
     return (
-      <View className="bg-[#0E1A26] p-4 rounded-lg border border-cyan-900/30">
-        <Text className="text-base font-semibold text-amber-100 mb-3">
+      <View className="bg-dentfyDarkBlue p-4 rounded-lg border border-dentfyCyan/30">
+        <Text className="text-base font-semibold text-dentfyTextPrimary mb-3">
           Casos por Tipo
         </Text>
         <View className="h-[200px] items-center justify-center">
-          <Text className="text-amber-100/70">Carregando...</Text>
+          <Text className="text-dentfyTextSecondary">Carregando...</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View className="bg-[#0E1A26] p-4 rounded-lg border border-cyan-900/30">
-      <Text className="text-base font-semibold text-amber-100 mb-3">
+    <View className="bg-dentfyDarkBlue p-4 rounded-lg border border-dentfyCyan/30">
+      <Text className="text-base font-semibold text-dentfyTextPrimary mb-3">
         Casos por Tipo
       </Text>
       <BarChart
@@ -49,12 +50,12 @@ export default function DashboardPeritoCasosMensais({ casos, isLoading }: Props)
         yAxisLabel=""
         yAxisSuffix=""
         chartConfig={{
-          backgroundColor: '#0E1A26',
-          backgroundGradientFrom: '#0E1A26',
-          backgroundGradientTo: '#0E1A26',
+          backgroundColor: colors.dentfyDarkBlue,
+          backgroundGradientFrom: colors.dentfyDarkBlue,
+          backgroundGradientTo: colors.dentfyDarkBlue,
           decimalPlaces: 0,
-          color: (opacity = 1) => `rgba(234, 179, 8, ${opacity})`, // yellow-500
-          labelColor: (opacity = 1) => `rgba(254, 243, 199, ${opacity})`, // amber-100
+          color: (opacity = 1) => `${colors.dentfyAmberLight}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`,
+          labelColor: (opacity = 1) => `${colors.dentfyAmberLighter}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`,
           style: {
             borderRadius: 16,
           },

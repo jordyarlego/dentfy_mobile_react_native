@@ -6,6 +6,8 @@ import InputComponent from '../../../components/InputComponent';
 import { Picker } from '@react-native-picker/picker';
 import HeaderPerito from '../../../components/header';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../../../theme/colors';
+import { Heading, Body } from '../../../components/Typography';
 
 interface FormData {
   nome: string;
@@ -55,7 +57,7 @@ export default function NovoUsuario() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#0E1A26]">
+    <SafeAreaView className="flex-1 bg-dentfyDarkBlue">
       <HeaderPerito showBackButton />
       <ScrollView className="flex-1">
         <View className="p-4 space-y-4">
@@ -64,8 +66,8 @@ export default function NovoUsuario() {
             placeholder="Digite o nome"
             value={formData.nome}
             onChangeText={(text: string) => handleInputChange('nome', text)}
-            className="bg-[#0E1A26] border-cyan-900/30 text-amber-100"
-            placeholderTextColor="#94a3b8"
+            className="bg-dentfyGray800 border-dentfyBorderGray text-dentfyTextPrimary rounded-lg"
+            placeholderTextColor={colors.dentfyTextSecondary}
           />
 
           <InputComponent
@@ -75,8 +77,8 @@ export default function NovoUsuario() {
             onChangeText={(text: string) => handleInputChange('email', text)}
             keyboardType="email-address"
             autoCapitalize="none"
-            className="bg-[#0E1A26] border-cyan-900/30 text-amber-100"
-            placeholderTextColor="#94a3b8"
+            className="bg-dentfyGray800 border-dentfyBorderGray text-dentfyTextPrimary rounded-lg"
+            placeholderTextColor={colors.dentfyTextSecondary}
           />
 
           <InputComponent
@@ -86,23 +88,30 @@ export default function NovoUsuario() {
             onChangeText={(text: string) => handleInputChange('cpf', text)}
             keyboardType="numeric"
             maxLength={11}
-            className="bg-[#0E1A26] border-cyan-900/30 text-amber-100"
-            placeholderTextColor="#94a3b8"
+            className="bg-dentfyGray800 border-dentfyBorderGray text-dentfyTextPrimary rounded-lg"
+            placeholderTextColor={colors.dentfyTextSecondary}
           />
 
           <View className="mb-4">
-            <Text className="text-sm font-medium text-amber-100 mb-1">Cargo</Text>
-            <View className="border border-cyan-900/30 rounded-lg bg-[#0E1A26]">
+            <Body className="text-dentfyTextPrimary mb-1">Cargo</Body>
+            <View className="border border-dentfyBorderGray rounded-lg bg-dentfyGray800 overflow-hidden">
               <Picker
                 selectedValue={formData.cargo}
                 onValueChange={(value: string) => handleInputChange('cargo', value)}
-                style={{ height: 50, color: '#0E1A26' }}
-                dropdownIconColor="#0E1A26"
+                style={{ height: 50 }}
+                dropdownIconColor={colors.dentfyAmber}
                 mode="dropdown"
-                itemStyle={{ backgroundColor: '#fef3c7', color: '#0E1A26' }}
               >
-                <Picker.Item label="Perito" value="perito" color="#0E1A26" />
-                <Picker.Item label="Assistente" value="assistente" color="#0E1A26" />
+                <Picker.Item 
+                  label="Perito" 
+                  value="perito" 
+                  color={colors.dentfyAmber}
+                />
+                <Picker.Item 
+                  label="Assistente" 
+                  value="assistente" 
+                  color={colors.dentfyAmber}
+                />
               </Picker>
             </View>
           </View>
@@ -113,8 +122,8 @@ export default function NovoUsuario() {
             value={formData.senha}
             onChangeText={(text: string) => handleInputChange('senha', text)}
             secureTextEntry
-            className="bg-[#0E1A26] border-cyan-900/30 text-amber-100"
-            placeholderTextColor="#94a3b8"
+            className="bg-dentfyGray800 border-dentfyBorderGray text-dentfyTextPrimary rounded-lg"
+            placeholderTextColor={colors.dentfyTextSecondary}
           />
 
           <InputComponent
@@ -123,15 +132,15 @@ export default function NovoUsuario() {
             value={formData.confirmarSenha}
             onChangeText={(text: string) => handleInputChange('confirmarSenha', text)}
             secureTextEntry
-            className="bg-[#0E1A26] border-cyan-900/30 text-amber-100"
-            placeholderTextColor="#94a3b8"
+            className="bg-dentfyGray800 border-dentfyBorderGray text-dentfyTextPrimary rounded-lg"
+            placeholderTextColor={colors.dentfyTextSecondary}
           />
 
           <TouchableOpacity
             onPress={handleSubmit}
-            className="bg-amber-500 p-4 rounded-lg mt-4"
+            className="bg-dentfyAmber p-4 rounded-lg mt-4"
           >
-            <Text className="text-[#0E1A26] text-center font-semibold text-lg">Criar Usuário</Text>
+            <Body className="text-dentfyDarkBlue text-center font-semibold">Criar Usuário</Body>
           </TouchableOpacity>
         </View>
       </ScrollView>

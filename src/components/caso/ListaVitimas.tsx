@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Vitima } from '../../types/caso';
+import { colors } from '../../theme/colors';
 
 interface ListaVitimasProps {
   vitimas: Vitima[];
@@ -19,15 +20,17 @@ export default function ListaVitimas({
   return (
     <View className="mb-6">
       <View className="flex-row justify-between items-center mb-4">
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#F59E0B' }}>
+        <Text style={{ color: colors.dentfyAmber }} className="text-xl font-bold">
           Vítimas
         </Text>
         <TouchableOpacity
           onPress={onAdd}
           className="flex-row items-center gap-2 px-4 py-2 bg-amber-600 rounded-lg"
         >
-          <Ionicons name="add" size={20} color="#FFFFFF" />
-          <Text style={{ fontSize: 16, color: '#FFFFFF' }}>Nova Vítima</Text>
+          <Ionicons name="add" size={20} color="#FFFFFF" /> 
+          <Text style={{ color: '#FFFFFF' }} className="text-base">
+            Nova Vítima
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -39,10 +42,10 @@ export default function ListaVitimas({
           >
             <View className="flex-row justify-between items-center mb-2">
               <View>
-                <Text style={{ fontSize: 16, fontWeight: '500', color: '#F3F4F6' }}>
+                <Text style={{ color: colors.dentfyTextPrimary }} className="text-base font-medium">
                   {vitima.nome}
                 </Text>
-                <Text style={{ fontSize: 14, color: '#9CA3AF' }}>
+                <Text style={{ color: colors.dentfyTextSecondary }} className="text-sm">
                   {new Date(vitima.dataNascimento).toLocaleDateString('pt-BR')}
                 </Text>
               </View>
@@ -51,41 +54,41 @@ export default function ListaVitimas({
                   onPress={() => onEdit(vitima)}
                   className="p-2"
                 >
-                  <Ionicons name="pencil" size={20} color="#9CA3AF" />
+                  <Ionicons name="pencil" size={20} color={colors.dentfyTextSecondary} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => onDelete(vitima)}
                   className="p-2"
                 >
-                  <Ionicons name="trash" size={20} color="#EF4444" />
+                  <Ionicons name="trash" size={20} color={colors.errorRed} />
                 </TouchableOpacity>
               </View>
             </View>
 
             <View className="flex-row flex-wrap gap-2">
               <View className="bg-gray-700/50 px-2 py-1 rounded">
-                <Text style={{ fontSize: 12, color: '#D1D5DB' }}>
+                <Text style={{ color: colors.dentfyTextSecondary }} className="text-xs">
                   {vitima.sexo === 'masculino' ? 'Masculino' : 'Feminino'}
                 </Text>
               </View>
               <View className="bg-gray-700/50 px-2 py-1 rounded">
-                <Text style={{ fontSize: 12, color: '#D1D5DB' }}>
+                <Text style={{ color: colors.dentfyTextSecondary }} className="text-xs">
                   {vitima.etnia}
                 </Text>
               </View>
               <View className="bg-gray-700/50 px-2 py-1 rounded">
-                <Text style={{ fontSize: 12, color: '#D1D5DB' }}>
+                <Text style={{ color: colors.dentfyTextSecondary }} className="text-xs">
                   {vitima.cpf}
                 </Text>
               </View>
               <View className="bg-gray-700/50 px-2 py-1 rounded">
-                <Text style={{ fontSize: 12, color: '#D1D5DB' }}>
+                <Text style={{ color: colors.dentfyTextSecondary }} className="text-xs">
                   {vitima.nic}
                 </Text>
               </View>
             </View>
 
-            <Text style={{ fontSize: 14, color: '#D1D5DB', marginTop: 8 }}>
+            <Text style={{ color: colors.dentfyTextSecondary, marginTop: 8 }} className="text-sm">
               {vitima.endereco}
             </Text>
           </View>
@@ -93,8 +96,8 @@ export default function ListaVitimas({
 
         {vitimas.length === 0 && (
           <View className="items-center justify-center py-8">
-            <Ionicons name="person" size={48} color="#6B7280" />
-            <Text style={{ fontSize: 16, color: '#9CA3AF', marginTop: 8 }}>
+            <Ionicons name="person" size={48} color={colors.dentfyGray750} />
+            <Text style={{ color: colors.dentfyTextSecondary, marginTop: 8 }} className="text-base">
               Nenhuma vítima cadastrada
             </Text>
           </View>
@@ -102,4 +105,4 @@ export default function ListaVitimas({
       </View>
     </View>
   );
-} 
+}

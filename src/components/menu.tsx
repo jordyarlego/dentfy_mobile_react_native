@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, TouchableOpacity, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ModalConfirmacao from './caso/ModalConfirmacao';
+import { colors } from '../theme/colors';
+import { Body } from './Typography';
 
 interface MenuItem {
   name: string;
@@ -29,14 +31,14 @@ export default function Menu() {
   };
 
   const confirmarLogout = async () => {
-    await AsyncStorage.removeItem('userToken');
+    await AsyncStorage.removeItem('@dentfy:token');
     router.replace('/login');
     setModalLogoutVisible(false);
   };
 
   return (
     <View
-      className="flex-row justify-around items-center bg-gray-800/80 border-t border-gray-700 px-4 py-3"
+      className="flex-row justify-around items-center bg-dentfyGray800/80 border-t border-dentfyBorderGray px-4 py-3"
       style={{
         shadowColor: "#000",
         shadowOffset: { width: 0, height: -4 },
@@ -51,33 +53,39 @@ export default function Menu() {
           <TouchableOpacity
             key={item.name}
             onPress={() => router.navigate(item.path)}
-            className={
-              `flex-1 items-center py-1 rounded-md ${
-                isActive ? '' : ''
-              }`
-            }
+            className="flex-1 items-center py-1"
           >
             <Ionicons 
               name={isActive ? item.icon.replace('-outline', '') as keyof typeof Ionicons.glyphMap : item.icon}
               size={24}
-              color={isActive ? '#F59E0B' : '#9CA3AF'}
+              color={isActive ? colors.dentfyAmber : colors.dentfyTextSecondary}
             />
-            <Text
-              className={`text-xs mt-1 ${
-                isActive ? 'text-amber-500 font-bold' : 'text-gray-400'
+            <Body
+              size="small"
+              className={`mt-1 ${
+                isActive ? 'text-dentfyAmber font-medium' : 'text-dentfyTextSecondary'
               }`}
             >
               {item.name}
-            </Text>
+            </Body>
           </TouchableOpacity>
         );
       })}
       <TouchableOpacity
         onPress={handleLogout}
-        className="flex-1 items-center py-1 rounded-md"
+        className="flex-1 items-center py-1"
       >
-        <Ionicons name="log-out-outline" size={24} color="#EF4444" />
-        <Text className="text-xs mt-1 text-red-500">Sair</Text>
+        <Ionicons 
+          name="log-out-outline" 
+          size={24} 
+          color={colors.errorRed} 
+        />
+        <Body
+          size="small"
+          className="mt-1 text-errorRed"
+        >
+          Sair
+        </Body>
       </TouchableOpacity>
 
       <ModalConfirmacao

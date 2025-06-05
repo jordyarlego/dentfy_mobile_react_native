@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
+import { colors } from '../../theme/colors';
 
 interface Props {
   casosEmAndamento: number;
@@ -21,42 +22,42 @@ export default function DashboardPeritoDistribuicao({
     {
       name: 'Em Andamento',
       quantidade: casosEmAndamento,
-      color: '#eab308', // yellow-500
-      legendFontColor: '#fef3c7', // amber-100
+      color: colors.dentfyAmberLight,
+      legendFontColor: colors.dentfyAmberLighter,
       legendFontSize: 12,
     },
     {
       name: 'Finalizados',
       quantidade: casosFinalizados,
-      color: '#22c55e', // green-500
-      legendFontColor: '#fef3c7',
+      color: colors.successGreen,
+      legendFontColor: colors.dentfyAmberLighter,
       legendFontSize: 12,
     },
     {
       name: 'Arquivados',
       quantidade: casosArquivados,
-      color: '#a855f7', // purple-500
-      legendFontColor: '#fef3c7',
+      color: colors.statusRed,
+      legendFontColor: colors.dentfyAmberLighter,
       legendFontSize: 12,
     },
   ];
 
   if (isLoading) {
     return (
-      <View className="bg-[#0E1A26] p-4 rounded-lg border border-cyan-900/30">
-        <Text className="text-base font-semibold text-amber-100 mb-3">
+      <View className="bg-dentfyDarkBlue p-4 rounded-lg border border-dentfyCyan/30">
+        <Text className="text-base font-semibold text-dentfyTextPrimary mb-3">
           Distribuição dos Casos
         </Text>
         <View className="h-[200px] items-center justify-center">
-          <Text className="text-amber-100/70">Carregando...</Text>
+          <Text className="text-dentfyTextSecondary">Carregando...</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View className="bg-[#0E1A26] p-4 rounded-lg border border-cyan-900/30">
-      <Text className="text-base font-semibold text-amber-100 mb-3">
+    <View className="bg-dentfyDarkBlue p-4 rounded-lg border border-dentfyCyan/30">
+      <Text className="text-base font-semibold text-dentfyTextPrimary mb-3">
         Distribuição dos Casos
       </Text>
       <PieChart
@@ -64,11 +65,11 @@ export default function DashboardPeritoDistribuicao({
         width={screenWidth}
         height={200}
         chartConfig={{
-          backgroundColor: '#0E1A26',
-          backgroundGradientFrom: '#0E1A26',
-          backgroundGradientTo: '#0E1A26',
-          color: (opacity = 1) => `rgba(254, 243, 199, ${opacity})`, // amber-100
-          labelColor: (opacity = 1) => `rgba(254, 243, 199, ${opacity})`,
+          backgroundColor: colors.dentfyDarkBlue,
+          backgroundGradientFrom: colors.dentfyDarkBlue,
+          backgroundGradientTo: colors.dentfyDarkBlue,
+          color: (opacity = 1) => `${colors.dentfyAmberLighter}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`,
+          labelColor: (opacity = 1) => `${colors.dentfyAmberLighter}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`,
           style: {
             borderRadius: 16,
           },

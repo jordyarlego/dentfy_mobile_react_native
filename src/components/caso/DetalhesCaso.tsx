@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import type { Caso } from '../../types/caso';
+import { Heading, Body } from '../Typography';
 
 interface DetalhesCasoProps {
   caso: Caso;
@@ -10,13 +11,13 @@ export default function DetalhesCaso({ caso }: DetalhesCasoProps) {
   const getStatusStyle = (status: Caso['status']) => {
     switch (status) {
       case 'concluido':
-        return 'bg-green-500/10 text-green-400 border-green-500/30';
+        return 'bg-successGreen/10 text-successGreen border-successGreen/30';
       case 'em_andamento':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+        return 'bg-dentfyAmber/10 text-dentfyAmber border-dentfyAmber/30';
       case 'arquivado':
-        return 'bg-red-500/10 text-red-400 border-red-500/30';
+        return 'bg-errorRed/10 text-errorRed border-errorRed/30';
       default:
-        return 'bg-gray-500/10 text-gray-400 border-gray-500/30';
+        return 'bg-dentfyGray600/10 text-dentfyGray600 border-dentfyGray600/30';
     }
   };
 
@@ -35,47 +36,47 @@ export default function DetalhesCaso({ caso }: DetalhesCasoProps) {
 
   return (
     <View className="mb-6">
-      <View className="bg-gray-800/30 p-4 rounded-lg">
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#F59E0B', marginBottom: 8 }}>
+      <View className="bg-dentfyGray800/30 p-4 rounded-lg">
+        <Heading size="large" className="text-dentfyAmber mb-2">
           Detalhes do Caso
-        </Text>
+        </Heading>
         
         <View className="space-y-2">
           <View className="flex-row justify-between items-center">
-            <Text style={{ fontSize: 16, color: '#D1D5DB', flex: 1, marginRight: 8 }}>
+            <Body className="text-dentfyTextPrimary flex-1 mr-2">
               {caso.titulo}
-            </Text>
+            </Body>
             <View className={`px-3 py-1 rounded-full border ${getStatusStyle(caso.status)}`}>
-              <Text style={{ fontSize: 12 }}>
+              <Body size="small" className="text-current">
                 {getStatusText(caso.status)}
-              </Text>
+              </Body>
             </View>
           </View>
 
-          <Text style={{ fontSize: 16, color: '#D1D5DB' }}>
-            <Text style={{ fontWeight: '500', color: '#F59E0B' }}>Descrição: </Text>
+          <Body className="text-dentfyTextPrimary">
+            <Text className="font-medium text-dentfyAmber">Descrição: </Text>
             {caso.descricao}
-          </Text>
+          </Body>
 
-          <Text style={{ fontSize: 16, color: '#D1D5DB' }}>
-            <Text style={{ fontWeight: '500', color: '#F59E0B' }}>Responsável: </Text>
+          <Body className="text-dentfyTextPrimary">
+            <Text className="font-medium text-dentfyAmber">Responsável: </Text>
             {caso.responsavel}
-          </Text>
+          </Body>
 
-          <Text style={{ fontSize: 16, color: '#D1D5DB' }}>
-            <Text style={{ fontWeight: '500', color: '#F59E0B' }}>Local: </Text>
+          <Body className="text-dentfyTextPrimary">
+            <Text className="font-medium text-dentfyAmber">Local: </Text>
             {caso.local}
-          </Text>
+          </Body>
 
-          <Text style={{ fontSize: 16, color: '#D1D5DB' }}>
-            <Text style={{ fontWeight: '500', color: '#F59E0B' }}>Data de Abertura: </Text>
+          <Body className="text-dentfyTextPrimary">
+            <Text className="font-medium text-dentfyAmber">Data de Abertura: </Text>
             {new Date(caso.dataAbertura).toLocaleDateString('pt-BR')}
-          </Text>
+          </Body>
 
-          <Text style={{ fontSize: 16, color: '#D1D5DB' }}>
-            <Text style={{ fontWeight: '500', color: '#F59E0B' }}>Sexo: </Text>
+          <Body className="text-dentfyTextPrimary">
+            <Text className="font-medium text-dentfyAmber">Sexo: </Text>
             {caso.sexo}
-          </Text>
+          </Body>
         </View>
       </View>
     </View>

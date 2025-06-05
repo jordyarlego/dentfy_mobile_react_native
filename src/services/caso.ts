@@ -1,6 +1,10 @@
 import api from './api';
-import { CasoData } from '../app/(app)/casos';
-import { CasoCreateData } from '../app/(app)/casos';
+import type { CasoData, CasoStatusAPI } from '../components/CaseCard';
+
+// Tipo para criar caso
+export type CasoCreateData = Omit<CasoData, '_id' | 'dataFechamento'> & {
+  dataFechamento?: string;
+};
 
 // Buscar todos os casos
 export async function buscarCasos(token?: string) {
@@ -9,7 +13,7 @@ export async function buscarCasos(token?: string) {
   } : undefined;
 
   const response = await api.get('/api/cases', config);
-  return response.data.casos;
+  return response.data.casos as CasoData[];
 }
 
 // Buscar caso por ID
@@ -19,7 +23,7 @@ export async function buscarCasoPorId(id: string, token?: string) {
   } : undefined;
 
   const response = await api.get(`/api/cases/${id}`, config);
-  return response.data.caso;
+  return response.data.caso as CasoData;
 }
 
 // Criar novo caso
@@ -29,9 +33,8 @@ export async function criarCaso(data: CasoCreateData, token: string) {
       Authorization: `Bearer ${token}`,
     },
   });
-  return response.data.caso;
+  return response.data.caso as CasoData;
 }
-
 
 // Atualizar caso
 export async function atualizarCaso(id: string, data: Partial<CasoData>, token: string) {
@@ -40,7 +43,7 @@ export async function atualizarCaso(id: string, data: Partial<CasoData>, token: 
       Authorization: `Bearer ${token}`,
     },
   });
-  return response.data.caso;
+  return response.data.caso as CasoData;
 }
 
 // Deletar caso
