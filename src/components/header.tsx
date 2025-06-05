@@ -26,10 +26,10 @@ export default function HeaderPerito({ showBackButton = false }: HeaderProps) {
               </TouchableOpacity>
             ) : (
               <>
-                <View className="w-12 h-12">
+                <View className="w-8 h-8">
                   <Image
                     source={require('../assets/logo.png')}
-                    style={{ width: 48, height: 48 }}
+                    style={{ width: 25, height: 30 }}
                     resizeMode="contain"
                   />
                 </View>
