@@ -1,18 +1,26 @@
 "use client";
 
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Platform, Modal } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Heading, Body } from '../../components/Typography';
-import HeaderPerito from '../../components/header';
-import { useToast } from '../../contexts/ToastContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import type { CasoData, CasoStatusAPI } from '../../components/CaseCard';
-import { criarCaso } from '../../services/caso';
-import type { CasoCreateData } from '../../app/(app)/casos';
-import { colors } from '../../theme/colors';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  Platform,
+  Modal,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { Heading, Body } from "../../components/Typography";
+import HeaderPerito from "../../components/header";
+import { useToast } from "../../contexts/ToastContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import type { CasoData, CasoStatusAPI } from "../../components/CaseCard";
+import { criarCaso } from "../../services/caso";
+import type { CasoCreateData } from "../../app/(app)/casos";
+import { colors } from "../../theme/colors";
 
 const ModalDatePicker = ({
   visible,
@@ -25,7 +33,7 @@ const ModalDatePicker = ({
   value: Date;
   onChange: (date: Date) => void;
 }) => {
-  if (Platform.OS === 'ios') {
+  if (Platform.OS === "ios") {
     return (
       <Modal
         visible={visible}
@@ -36,9 +44,15 @@ const ModalDatePicker = ({
         <View className="flex-1 bg-overlayBlack justify-end">
           <View className="bg-dentfyGray800 rounded-t-2xl p-4">
             <View className="flex-row justify-between items-center mb-4">
-              <Heading size="medium" className="text-dentfyTextPrimary">Selecione a Data</Heading>
+              <Heading size="medium" className="text-dentfyTextPrimary">
+                Selecione a Data
+              </Heading>
               <TouchableOpacity onPress={onClose}>
-                <Ionicons name="close" size={24} color={colors.dentfyTextSecondary} />
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={colors.dentfyTextSecondary}
+                />
               </TouchableOpacity>
             </View>
 
@@ -93,27 +107,27 @@ export default function NovoCaso() {
   };
 
   const [formData, setFormData] = useState<CasoCreateData>({
-    titulo: '',
-    descricao: '',
-    responsavel: '',
-    status: 'Em andamento' as CasoStatusAPI,
-    tipo: 'Vitima',
-    dataAbertura: adjustDateForTimezone(new Date()).toISOString().split('T')[0],
-    sexo: 'Masculino',
-    local: '',
+    titulo: "",
+    descricao: "",
+    responsavel: "",
+    status: "Em andamento" as CasoStatusAPI,
+    tipo: "Vitima",
+    dataAbertura: adjustDateForTimezone(new Date()).toISOString().split("T")[0],
+    sexo: "Masculino",
+    local: "",
   });
 
   const [error, setError] = useState<string | null>(null);
 
   const handleChange = (field: keyof CasoCreateData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
     const adjustedDate = adjustDateForTimezone(date);
-    const formattedDate = adjustedDate.toISOString().split('T')[0];
-    handleChange('dataAbertura', formattedDate);
+    const formattedDate = adjustedDate.toISOString().split("T")[0];
+    handleChange("dataAbertura", formattedDate);
   };
 
   const handleSubmit = async () => {
@@ -137,16 +151,16 @@ export default function NovoCaso() {
     }
 
     try {
-      const token = await AsyncStorage.getItem('@dentfy:token');
+      const token = await AsyncStorage.getItem("token");
       if (!token) {
-        setError('Token de autenticação não encontrado.');
+        setError("Token de autenticação não encontrado.");
         return;
       }
 
       await criarCaso(formData, token);
 
-      showToast('Caso criado com sucesso!', 'success');
-      router.push('/casos');
+      showToast("Caso criado com sucesso!", "success");
+      router.push("/casos");
     } catch (err) {
       console.error(err);
       if (err instanceof Error) {
@@ -157,15 +171,18 @@ export default function NovoCaso() {
     }
   };
 
-
   return (
     <View className="flex-1 bg-gray-900">
       <HeaderPerito showBackButton />
-      
+
       <ScrollView className="flex-1 p-4">
         <View className="mb-6">
-          <Heading size="large" className="text-gray-100 mb-2">Novo Caso</Heading>
-          <Body className="text-gray-400">Preencha os dados do novo caso odontolegal</Body>
+          <Heading size="large" className="text-gray-100 mb-2">
+            Novo Caso
+          </Heading>
+          <Body className="text-gray-400">
+            Preencha os dados do novo caso odontolegal
+          </Body>
         </View>
 
         <View className="space-y-4">
@@ -174,7 +191,7 @@ export default function NovoCaso() {
             <Body className="text-amber-500 mb-2">Título</Body>
             <TextInput
               value={formData.titulo}
-              onChangeText={(value) => handleChange('titulo', value)}
+              onChangeText={(value) => handleChange("titulo", value)}
               className="w-full px-4 py-2 bg-gray-800 text-gray-100 rounded-lg border border-amber-500/30"
               placeholder="Digite o título do caso"
               placeholderTextColor="#9CA3AF"
@@ -189,9 +206,15 @@ export default function NovoCaso() {
               className="w-full px-4 py-2 bg-gray-800 rounded-lg border border-amber-500/30 flex-row justify-between items-center"
             >
               <Body className="text-gray-100">
-                {new Date(formData.dataAbertura + 'T00:00:00').toLocaleDateString('pt-BR')}
+                {new Date(
+                  formData.dataAbertura + "T00:00:00"
+                ).toLocaleDateString("pt-BR")}
               </Body>
-              <Ionicons name="calendar-outline" size={20} color={colors.dentfyAmber} />
+              <Ionicons
+                name="calendar-outline"
+                size={20}
+                color={colors.dentfyAmber}
+              />
             </TouchableOpacity>
 
             <ModalDatePicker
@@ -207,7 +230,7 @@ export default function NovoCaso() {
             <Body className="text-amber-500 mb-2">Local</Body>
             <TextInput
               value={formData.local}
-              onChangeText={(value) => handleChange('local', value)}
+              onChangeText={(value) => handleChange("local", value)}
               className="w-full px-4 py-2 bg-gray-800 text-gray-100 rounded-lg border border-amber-500/30"
               placeholder="Digite o local do caso"
               placeholderTextColor="#9CA3AF"
@@ -219,7 +242,7 @@ export default function NovoCaso() {
             <Body className="text-dentfyAmber mb-2">Responsável</Body>
             <TextInput
               value={formData.responsavel}
-              onChangeText={(value) => handleChange('responsavel', value)}
+              onChangeText={(value) => handleChange("responsavel", value)}
               className="w-full px-4 py-2 bg-dentfyGray800 text-dentfyTextPrimary rounded-lg border border-dentfyAmber/30"
               placeholder="Digite o nome do responsável"
               placeholderTextColor={colors.dentfyTextSecondary}
@@ -231,7 +254,7 @@ export default function NovoCaso() {
             <Body className="text-dentfyAmber mb-2">Descrição</Body>
             <TextInput
               value={formData.descricao}
-              onChangeText={(value) => handleChange('descricao', value)}
+              onChangeText={(value) => handleChange("descricao", value)}
               className="w-full px-4 py-2 bg-dentfyGray800 text-dentfyTextPrimary rounded-lg border border-dentfyAmber/30 min-h-[100px]"
               placeholder="Digite a descrição do caso"
               placeholderTextColor={colors.dentfyTextSecondary}
@@ -257,7 +280,7 @@ export default function NovoCaso() {
           >
             <Body className="text-gray-400 text-center">Cancelar</Body>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             onPress={handleSubmit}
             className="flex-1 p-3 bg-amber-600 rounded-lg"
@@ -271,4 +294,4 @@ export default function NovoCaso() {
       </View>
     </View>
   );
-} 
+}
