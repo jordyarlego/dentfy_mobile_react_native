@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../hooks/useAuth';
 import ModalConfirmacao from './caso/ModalConfirmacao';
 import { colors } from '../theme/colors';
 import { Body } from './Typography';
@@ -24,6 +24,7 @@ const menuItems: MenuItem[] = [
 export default function Menu() {
   const router = useRouter();
   const pathname = usePathname();
+  const { signOut } = useAuth();
   const [modalLogoutVisible, setModalLogoutVisible] = useState(false);
 
   const handleLogout = async () => {
@@ -31,9 +32,18 @@ export default function Menu() {
   };
 
   const confirmarLogout = async () => {
-    await AsyncStorage.removeItem('@dentfy:token');
-    router.replace('/login');
-    setModalLogoutVisible(false);
+    try {
+      console.log('=== INÍCIO DO LOGOUT ===');
+      await signOut();
+      console.log('Logout realizado, redirecionando...');
+      router.replace('/login');
+      setModalLogoutVisible(false);
+      console.log('=== FIM DO LOGOUT ===');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      // Mesmo com erro, tenta redirecionar
+      router.replace('/login');
+    }
   };
 
   return (

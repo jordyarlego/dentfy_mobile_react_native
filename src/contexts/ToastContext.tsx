@@ -5,7 +5,15 @@ interface ToastContextData {
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-const ToastContext = createContext<ToastContextData>({} as ToastContextData);
+// Criando o contexto com um valor inicial
+const ToastContext = createContext<ToastContextData>({
+  showToast: () => {
+    console.warn('ToastContext não foi inicializado corretamente');
+  }
+});
+
+// Exportando o contexto para uso em outros lugares se necessário
+export { ToastContext };
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [visible, setVisible] = useState(false);
@@ -13,6 +21,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [type, setType] = useState<'success' | 'error' | 'info'>('success');
 
   const showToast = useCallback((newMessage: string, newType: 'success' | 'error' | 'info' = 'success') => {
+    console.log('showToast chamado:', { message: newMessage, type: newType });
     setMessage(newMessage);
     setType(newType);
     setVisible(true);
@@ -22,8 +31,13 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setVisible(false);
   }, []);
 
+  // Criando o objeto de valor do contexto
+  const value = {
+    showToast
+  };
+
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={value}>
       {children}
       <Toast
         visible={visible}
@@ -38,7 +52,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 export const useToast = () => {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
+    throw new Error('useToast deve ser usado dentro de um ToastProvider');
   }
   return context;
 }; 

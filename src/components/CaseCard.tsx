@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 
 // Tipo para a API
-export type CasoStatusAPI = 'Em andamento' | 'Concluído' | 'Arquivado';
+export type CasoStatusAPI = 'Em andamento' | 'Finalizado' | 'Arquivado';
 
 // Tipo para o frontend
 export type CasoStatusFrontend = 'em_andamento' | 'concluido' | 'arquivado';
@@ -15,7 +15,7 @@ export interface CasoData {
   titulo: string;
   descricao: string;
   responsavel: string;
-  status: CasoStatusAPI;  // Agora usando o tipo da API
+  status: CasoStatusAPI;
   tipo: 'Vitima' | 'Desaparecido' | 'Outro';
   dataAbertura: string;
   dataFechamento?: string;
@@ -24,59 +24,37 @@ export interface CasoData {
 }
 
 // Função para converter status da API para o frontend
-export const convertStatusToFrontend = (status: CasoStatusAPI): CasoStatusFrontend => {
+export function convertStatusToFrontend(status: CasoStatusAPI): CasoStatusFrontend {
   switch (status) {
     case 'Em andamento':
       return 'em_andamento';
-    case 'Concluído':
+    case 'Finalizado':
       return 'concluido';
     case 'Arquivado':
       return 'arquivado';
     default:
       return 'em_andamento';
   }
-};
+}
 
 // Função para converter status do frontend para a API
-export const convertStatusToAPI = (status: CasoStatusFrontend): CasoStatusAPI => {
+export function convertStatusToAPI(status: CasoStatusFrontend): CasoStatusAPI {
   switch (status) {
     case 'em_andamento':
       return 'Em andamento';
     case 'concluido':
-      return 'Concluído';
+      return 'Finalizado';
     case 'arquivado':
       return 'Arquivado';
     default:
       return 'Em andamento';
   }
-};
+}
 
 interface CaseCardProps {
   caso: CasoData;
   onPress: () => void;
 }
-
-const getStatusStyle = (status: CasoStatusAPI) => {
-  const frontendStatus = convertStatusToFrontend(status);
-  switch (frontendStatus) {
-    case 'concluido':
-      return 'bg-dentfyAmber/20 text-dentfyAmber border-dentfyAmber';
-    case 'em_andamento':
-      return 'bg-dentfyCyan/20 text-dentfyCyan border-dentfyCyan';
-    case 'arquivado':
-      return 'bg-errorRed/20 text-errorRed border-errorRed';
-    default:
-      return 'bg-dentfyGray600/20 text-dentfyTextSecondary border-dentfyGray600';
-  }
-};
-
-const getStatusText = (status: CasoStatusAPI) => {
-  return status; // Agora retornamos o status da API diretamente
-};
-
-const getTipoStyle = (tipo: CasoData['tipo']) => {
-  return 'bg-dentfyGray800/50 border-dentfyBorderGray';
-};
 
 export const CaseCard = ({ caso, onPress }: CaseCardProps) => {
   return (
@@ -88,13 +66,13 @@ export const CaseCard = ({ caso, onPress }: CaseCardProps) => {
         <View className="flex-1 mr-2">
           <Heading 
             size="small" 
-            className="text-dentfyTextPrimary mb-1 flex-wrap"
+            className="text-dentfyTextPrimary mb-1"
             numberOfLines={2}
           >
             {caso.titulo}
           </Heading>
           <View className="flex-row items-center mb-1">
-            <View className={`px-3 py-1 rounded-full border ${getTipoStyle(caso.tipo)}`}>
+            <View className="px-3 py-1 rounded-full border bg-dentfyGray800/50 border-dentfyBorderGray">
               <Caption className="text-xs font-semibold text-dentfyAmber">
                 {caso.tipo}
               </Caption>
@@ -102,9 +80,13 @@ export const CaseCard = ({ caso, onPress }: CaseCardProps) => {
           </View>
         </View>
 
-        <View className={`px-3 py-1 rounded-full border ${getStatusStyle(caso.status)}`}>
+        <View className={`px-3 py-1 rounded-full border ${
+          caso.status === 'Em andamento' ? 'bg-dentfyCyan/20 text-dentfyCyan border-dentfyCyan' :
+          caso.status === 'Finalizado' ? 'bg-dentfyAmber/20 text-dentfyAmber border-dentfyAmber' :
+          'bg-errorRed/20 text-errorRed border-errorRed'
+        }`}>
           <Caption className="text-xs font-semibold text-current">
-            {getStatusText(caso.status)}
+            {caso.status}
           </Caption>
         </View>
       </View>

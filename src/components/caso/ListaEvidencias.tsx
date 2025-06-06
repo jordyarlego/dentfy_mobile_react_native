@@ -2,12 +2,14 @@ import React from 'react';
 import { View, TouchableOpacity, Image, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Evidencia } from '../../types/caso';
+import { Heading, Body } from '../Typography';
+import { colors } from '../../theme/colors';
 
-interface ListaEvidenciasProps {
+export interface ListaEvidenciasProps {
   evidencias: Evidencia[];
-  onAdd: () => void;
-  onView: (evidencia: Evidencia) => void;
-  onDelete: (evidencia: Evidencia) => void;
+  onAdd?: () => void;
+  onView?: (evidencia: Evidencia) => void;
+  onDelete?: (evidencia: Evidencia) => void;
 }
 
 export default function ListaEvidencias({
@@ -19,16 +21,17 @@ export default function ListaEvidencias({
   return (
     <View className="mb-6">
       <View className="flex-row justify-between items-center mb-4">
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#F59E0B' }}>
+        <Heading size="medium" className="text-dentfyAmber">
           Evidências
-        </Text>
-        <TouchableOpacity
-          onPress={onAdd}
-          className="flex-row items-center gap-2 px-4 py-2 bg-amber-600 rounded-lg"
-        >
-          <Ionicons name="add" size={20} color="#FFFFFF" />
-          <Text style={{ fontSize: 16, color: '#FFFFFF' }}>Nova Evidência</Text>
-        </TouchableOpacity>
+        </Heading>
+        {onAdd && (
+          <TouchableOpacity
+            onPress={onAdd}
+            className="p-2 rounded-full bg-dentfyAmber/10"
+          >
+            <Ionicons name="add" size={24} color={colors.dentfyAmber} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <View className="space-y-4">
@@ -42,18 +45,22 @@ export default function ListaEvidencias({
                 {evidencia.titulo}
               </Text>
               <View className="flex-row gap-2">
-                <TouchableOpacity
-                  onPress={() => onView(evidencia)}
-                  className="p-2"
-                >
-                  <Ionicons name="eye" size={20} color="#9CA3AF" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => onDelete(evidencia)}
-                  className="p-2"
-                >
-                  <Ionicons name="trash" size={20} color="#EF4444" />
-                </TouchableOpacity>
+                {onView && (
+                  <TouchableOpacity
+                    onPress={() => onView(evidencia)}
+                    className="p-2"
+                  >
+                    <Ionicons name="eye" size={20} color="#9CA3AF" />
+                  </TouchableOpacity>
+                )}
+                {onDelete && (
+                  <TouchableOpacity
+                    onPress={() => onDelete(evidencia)}
+                    className="p-2"
+                  >
+                    <Ionicons name="trash" size={20} color="#EF4444" />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 

@@ -1,16 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, TouchableOpacity, ScrollView, TextInput, RefreshControl, Modal } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, TouchableOpacity, ScrollView, TextInput, RefreshControl, Modal, FlatList, ActivityIndicator, Text } from 'react-native';
 import { Heading, Body } from '../../components/Typography';
 import { useToast } from '../../contexts/ToastContext';
 import { colors } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderPerito from '../../components/header';
 import { useRouter } from 'expo-router';
-import { buscarCasos } from '../../services/caso';
+import { buscarCasos, buscarCasoCompleto } from '../../services/caso';
 import type { CasoData, CasoStatusAPI, CasoStatusFrontend } from '../../components/CaseCard';
 import { CaseCard, convertStatusToFrontend } from '../../components/CaseCard';
+import ModalDetalhesCaso from '../../components/caso/ModalDetalhesCaso';
+import type { Caso } from '../../types/caso';
+import { convertCasoDataToCaso } from '../../utils/caso';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Tipos
 export type CasoCreateData = Omit<CasoData, '_id' | 'dataFechamento'> & {
@@ -187,6 +193,8 @@ export default function Casos() {
   const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodo>('todos');
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>('todos');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
 
   const loadCasos = useCallback(async () => {
     try {
@@ -246,16 +254,157 @@ export default function Casos() {
 
   const casosFiltrados = casos.filter(filtrarCasos);
 
-  const handleCasePress = (caseId: string) => {
-    router.push(`/caso/${caseId}`);
+  const handleCasePress = async (caseId: string) => {
+    try {
+      console.log('=== INÍCIO DO CARREGAMENTO DO CASO ===');
+      console.log('ID do caso:', caseId);
+      
+      // Verificar token antes de fazer a requisição
+      const token = await AsyncStorage.getItem('token');
+      console.log('Token antes da requisição:', token ? 'Token presente' : 'Token ausente');
+      
+      console.log('Iniciando busca do caso completo...');
+      const { caso: casoData, vitimas, evidencias, peritos } = await buscarCasoCompleto(caseId);
+      console.log('Dados recebidos da API:', {
+        caso: casoData ? 'Caso presente' : 'Caso ausente',
+        vitimas: vitimas?.length || 0,
+        evidencias: evidencias?.length || 0,
+        peritos: peritos?.length || 0
+      });
+      
+      console.log('Convertendo dados do caso...');
+      const casoConvertido = convertCasoDataToCaso(casoData, vitimas, evidencias, peritos);
+      console.log('Caso convertido:', {
+        id: casoConvertido._id,
+        titulo: casoConvertido.titulo,
+        vitimas: casoConvertido.vitimas?.length || 0,
+        evidencias: casoConvertido.evidencias?.length || 0,
+        peritos: casoConvertido.peritos?.length || 0
+      });
+      
+      console.log('Atualizando estado...');
+      router.push(`/caso/${casoConvertido._id}`);
+      console.log('Estado atualizado com sucesso');
+      
+      console.log('=== FIM DO CARREGAMENTO DO CASO ===');
+    } catch (error: any) {
+      console.error('=== ERRO NO CARREGAMENTO DO CASO ===');
+      console.error('Mensagem de erro:', error.message);
+      console.error('Status da resposta:', error.response?.status);
+      console.error('Dados da resposta:', error.response?.data);
+      console.error('Headers da resposta:', error.response?.headers);
+      console.error('Stack do erro:', error.stack);
+      console.error('=== FIM DO ERRO ===');
+      
+      showToast('Erro ao carregar detalhes do caso', 'error');
+    }
   };
 
   const handleAddCase = () => {
     router.push('/novo-caso');
   };
 
+  const handleAddVitima = () => {
+    if (casos.length > 0) {
+      router.push(`/caso/${casos[0]._id}/vitima/novo`);
+    }
+  };
+
+  const handleAddEvidencia = () => {
+    if (casos.length > 0) {
+      router.push(`/caso/${casos[0]._id}/evidencia/nova`);
+    }
+  };
+
+  const handleAddPerito = () => {
+    if (casos.length > 0) {
+      router.push(`/caso/${casos[0]._id}/perito/novo`);
+    }
+  };
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const carregarCasos = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await buscarCasos();
+      console.log('Resposta da API (buscarCasos):', response);
+      if (Array.isArray(response)) {
+        setCasos(response);
+      } else {
+        console.error('Formato inesperado da resposta da API (buscarCasos):', response);
+        setError('Erro ao carregar casos: formato inesperado');
+        setCasos([]);
+      }
+    } catch (err: any) {
+      console.error('Erro ao buscar casos:', err);
+      setError('Erro ao carregar casos.');
+      setCasos([]);
+      if (err.response && err.response.status === 401) {
+         showToast({ type: 'error', message: 'Sessão expirada. Faça login novamente.' });
+         AsyncStorage.removeItem('token');
+         router.replace('/');
+       } else {
+           showToast({ type: 'error', message: err.message || 'Erro ao carregar casos.' });
+       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    carregarCasos();
+  }, []);
+
+  const filteredCasos = useMemo(() => {
+    return casos.filter(caso => {
+      const matchesSearch = search === '' ||
+                            caso.titulo.toLowerCase().includes(search.toLowerCase()) ||
+                            caso.responsavel.toLowerCase().includes(search.toLowerCase()) ||
+                            caso.local.toLowerCase().includes(search.toLowerCase());
+
+      const matchesStatus = selectedStatus === null || caso.status === selectedStatus;
+      const matchesType = selectedType === null || caso.tipo === selectedType;
+
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [casos, search, selectedStatus, selectedType]);
+
+  const handleApplyFilters = (status: string | null, type: string | null) => {
+    setSelectedStatus(status);
+    setSelectedType(type);
+    setShowFilters(false);
+  };
+
+  const handleClearFilters = () => {
+    setSelectedStatus(null);
+    setSelectedType(null);
+    setShowFilters(false);
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-dentfyDarkBlue">
+        <ActivityIndicator size="large" color={colors.dentfyAmber} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center bg-dentfyDarkBlue p-4">
+        <Body className="text-errorRed mb-4">{error}</Body>
+        <TouchableOpacity onPress={carregarCasos} className="bg-dentfyMediumBlue py-2 px-4 rounded">
+          <Body className="text-dentfyTextPrimary">Tentar Novamente</Body>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
-    <View className="flex-1 bg-dentfyDarkBlue">
+    <SafeAreaView className="flex-1 bg-dentfyDarkBlue">
       <HeaderPerito />
 
       <View className="flex-1">
@@ -287,10 +436,10 @@ export default function Casos() {
             />
           }
         >
-          {casosFiltrados.length === 0 ? (
+          {filteredCasos.length === 0 ? (
             <ListaVazia />
           ) : (
-            casosFiltrados.map((caso) => (
+            filteredCasos.map((caso) => (
               <CaseCard
                 key={caso._id}
                 caso={caso}
@@ -309,6 +458,6 @@ export default function Casos() {
           setFiltroStatus={setFiltroStatus}
         />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

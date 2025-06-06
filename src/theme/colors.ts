@@ -1,5 +1,5 @@
 export const colors = {
-  // Brand Colors
+
   dentfyDarkBlue: '#0E1A26',
   dentfyDarkBlueHover: '#0B151F',
   dentfyDarkBlueDisabled: '#1C2935',

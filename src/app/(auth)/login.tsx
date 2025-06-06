@@ -3,13 +3,14 @@ import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, TextInput,
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import InputTeste from "../../components/InputComponent";
-import { useToast } from "../../contexts/ToastContext";
+import { useAuth } from "../../hooks/useAuth";
 import api from "../../services/api";
 import { colors } from "../../theme/colors";
 import { Ionicons } from "@expo/vector-icons";
+import { useToast } from '../../contexts/ToastContext';
 
 export default function Login() {
-  const { showToast } = useToast();
+  const { signIn } = useAuth();
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
   const [cpfError, setCpfError] = useState("");
@@ -17,6 +18,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isCapsLockOn, setIsCapsLockOn] = useState(false);
+  const { showToast } = useToast();
 
   const checkCapsLock = (text: string) => {
     if (text.length === 0) {
@@ -70,8 +72,12 @@ export default function Login() {
     return "";
   };
 
+  const handleLogin = async () => {
+    if (!cpf || !password) {
+      showToast('Por favor, preencha todos os campos', 'error');
+      return;
+    }
 
-  const handleSubmit = async () => {
     setError("");
     setCpfError("");
     setLoading(true);
@@ -85,49 +91,72 @@ export default function Login() {
     }
 
     try {
-      const response = await fetchWithTimeout(
-        api.post("/api/users/login", {
-          cpf: cleanedCpf,
-          password,
-        })
-      );
+      console.log('=== INÍCIO DO LOGIN ===');
+      console.log('Tentando fazer login com CPF:', cleanedCpf);
+      
+      const response = await api.post("/api/users/login", {
+        cpf: cleanedCpf,
+        password,
+      });
 
-      const { token, user } = response.data;
+      console.log('Resposta do login:', {
+        status: response.status,
+        data: response.data,
+        headers: response.headers
+      });
 
-      await AsyncStorage.setItem("token", token);
-      await AsyncStorage.setItem("@dentfy:usuario", JSON.stringify({
-        nome: user.name,
-        cargo:
-          user.role === "admin"
-            ? "Administrador"
-            : user.role === "perito"
-              ? "Perito Criminal"
-              : "Assistente",
-      }));
-
-      showToast("Login realizado com sucesso!", "success");
-      router.replace("/(app)/casos");
-    } catch (err: any) {
-      const message =
-        err.message === "Tempo de resposta excedido"
-          ? "Servidor demorou para responder. Tente novamente."
-          : err.response?.data?.message || "Erro ao fazer login.";
-
-      setError(message);
-      showToast(message, "error");
+      if (response.status === 200 && response.data.token) {
+        console.log('Login bem sucedido, token recebido');
+        const token = response.data.token;
+        const userData = response.data.user;
+        
+        // Primeiro salva os dados do usuário
+        await AsyncStorage.setItem("@dentfy:usuario", JSON.stringify({
+          nome: userData.name,
+          cargo:
+            userData.role === "admin"
+              ? "Administrador"
+              : userData.role === "perito"
+                ? "Perito Criminal"
+                : "Assistente",
+        }));
+        
+        // Depois faz o login usando o contexto
+        await signIn(token);
+        
+        console.log('Login concluído com sucesso');
+        showToast('Login realizado com sucesso!', 'success');
+      } else {
+        console.error('Resposta inválida do servidor:', response.data);
+        showToast('Erro ao fazer login. Tente novamente.', 'error');
+      }
+    } catch (error: any) {
+      console.error('Erro durante o login:', error);
+      
+      // Tratamento específico de erros
+      if (error.response) {
+        // Erro com resposta do servidor
+        const status = error.response.status;
+        const message = error.response.data?.message || 'Erro ao fazer login';
+        
+        if (status === 401) {
+          showToast('Email ou senha incorretos', 'error');
+        } else if (status === 404) {
+          showToast('Usuário não encontrado', 'error');
+        } else {
+          showToast(message, 'error');
+        }
+      } else if (error.request) {
+        // Erro de rede
+        showToast('Erro de conexão. Verifique sua internet.', 'error');
+      } else {
+        // Outros erros
+        showToast('Ocorreu um erro inesperado', 'error');
+      }
     } finally {
       setLoading(false);
     }
   };
-  const fetchWithTimeout = (promise: Promise<any>, timeoutMs = 5000) => {
-    return Promise.race([
-      promise,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Tempo de resposta excedido")), timeoutMs)
-      )
-    ]);
-  };
-
 
   return (
     <ScrollView className="flex-1 bg-dentfyLightBlue">
@@ -180,7 +209,7 @@ export default function Login() {
             )}
 
             <TouchableOpacity
-              onPress={handleSubmit}
+              onPress={handleLogin}
               disabled={loading}
               className={`w-[200px] h-[50px] bg-dentfyCyan rounded-xl mx-auto items-center justify-center ${loading ? "opacity-50" : ""}`}
             >
