@@ -108,11 +108,7 @@ export default function DetalhesCasoPage() {
 
   return (
     <View className="flex-1 bg-dentfyGray900">
-      <HeaderPerito
-        title="Detalhes do Caso"
-        showBackButton
-        onBackPress={() => router.back()}
-      />
+      <HeaderPerito showBackButton />
 
       <ScrollView className="flex-1 p-4">
         <DetalhesCaso caso={caso} />
