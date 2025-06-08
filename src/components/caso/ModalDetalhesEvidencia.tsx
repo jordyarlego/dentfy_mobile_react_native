@@ -55,8 +55,8 @@ export default function ModalDetalhesEvidencia({
             </View>
 
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Coletado por</Text>
-              <Text style={{ fontSize: 18, color: '#FFFFFF' }}>{evidencia.coletadoPor}</Text>
+              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Coletada por</Text>
+              <Text style={{ fontSize: 18, color: '#FFFFFF' }}>{evidencia.coletadaPor}</Text>
             </View>
 
             <View>

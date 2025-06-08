@@ -14,9 +14,10 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
     titulo: '',
     descricao: '',
     tipo: 'imagem',
-    coletadoPor: '',
+    coletadaPor: '',
     dataColeta: '',
     local: '',
+    createdAt: new Date().toISOString(),
   });
 
   const handleChange = (field: keyof Omit<Evidencia, '_id'>, value: string) => {
@@ -29,7 +30,7 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
       'titulo',
       'descricao',
       'tipo',
-      'coletadoPor',
+      'coletadaPor',
       'dataColeta',
       'local',
     ];
@@ -51,9 +52,10 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
       titulo: '',
       descricao: '',
       tipo: 'imagem',
-      coletadoPor: '',
+      coletadaPor: '',
       dataColeta: '',
       local: '',
+      createdAt: new Date().toISOString(),
     });
   };
 
@@ -143,8 +145,8 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
             <View>
               <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Coletado por *</Text>
               <TextInput
-                value={formData.coletadoPor}
-                onChangeText={(value) => handleChange('coletadoPor', value)}
+                value={formData.coletadaPor}
+                onChangeText={(value) => handleChange('coletadaPor', value)}
                 className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
                 placeholder="Digite o nome do coletor"
                 placeholderTextColor="#6B7280"

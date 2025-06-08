@@ -11,13 +11,14 @@ export interface Vitima {
 
 export interface Evidencia {
   _id: string;
-  tipo: 'imagem' | 'documento' | 'outro';
   titulo: string;
-  descricao: string;
-  coletadoPor: string;
   dataColeta: string;
+  tipo: string;
   local: string;
-  arquivo?: string;
+  coletadaPor: string;
+  descricao: string;
+  imagemUri?: string;
+  createdAt: string;
 }
 
 export interface Perito {

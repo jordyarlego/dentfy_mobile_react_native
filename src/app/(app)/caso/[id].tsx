@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderPerito from '../../../components/header';
 import DetalhesCaso from '../../../components/caso/DetalhesCaso';
@@ -14,6 +14,7 @@ import type { Caso } from '../../../types/caso';
 import { Heading, Body } from '../../../components/Typography';
 import { colors } from '../../../theme/colors';
 import { buscarCasoCompleto } from '../../../services/caso';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function DetalhesCasoPage() {
   const { id } = useLocalSearchParams();
@@ -29,18 +30,54 @@ export default function DetalhesCasoPage() {
     }
   }, [id]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      if (id) {
+        console.log('Tela recebeu foco, recarregando caso:', id);
+        carregarCaso(id as string);
+      }
+    }, [id])
+  );
+
   const carregarCaso = async (casoId: string) => {
     try {
       setLoading(true);
+      
+      // Primeiro, carregar o caso do AsyncStorage para preservar dados locais
+      const casosStr = await AsyncStorage.getItem('@dentify_casos');
+      let casoLocal = null;
+      if (casosStr) {
+        const casos = JSON.parse(casosStr);
+        casoLocal = casos.find((c: any) => String(c._id) === String(casoId));
+      }
+
+      // Buscar dados atualizados do backend
       const data = await buscarCasoCompleto(casoId);
       
       // Garante que todas as listas sejam arrays, mesmo que vazios
       const casoFormatado: Caso = {
         ...data.caso,
         vitimas: Array.isArray(data.caso.vitimas) ? data.caso.vitimas : [],
-        evidencias: Array.isArray(data.caso.evidencias) ? data.caso.evidencias : [],
         peritos: Array.isArray(data.caso.peritos) ? data.caso.peritos : [],
+        // Preserva as evidências locais se existirem
+        evidencias: casoLocal?.evidencias || [],
       };
+      
+      // Atualizar o caso no AsyncStorage
+      let casos = [];
+      if (casosStr) {
+        casos = JSON.parse(casosStr);
+      }
+      
+      const casoIndex = casos.findIndex((c: any) => String(c._id) === String(casoFormatado._id));
+      if (casoIndex !== -1) {
+        casos[casoIndex] = casoFormatado;
+      } else {
+        casos.push(casoFormatado);
+      }
+      
+      await AsyncStorage.setItem('@dentify_casos', JSON.stringify(casos));
+      console.log('Caso atualizado no AsyncStorage:', casoFormatado._id);
       
       setCaso(casoFormatado);
     } catch (error: any) {
@@ -70,29 +107,18 @@ export default function DetalhesCasoPage() {
   }
 
   return (
-    <View className="flex-1 bg-dentfyDarkBlue">
-      <HeaderPerito />
-      
-      <ScrollView className="flex-1">
-        <View className="p-4">
-          <View className="flex-row items-center mb-4">
-            <TouchableOpacity
-              onPress={() => router.back()}
-              className="mr-4 p-2 rounded-full bg-dentfyGray800/30"
-            >
-              <Ionicons name="arrow-back" size={24} color={colors.dentfyAmber} />
-            </TouchableOpacity>
-            <Heading size="large" className="text-dentfyTextPrimary flex-1">
-              Detalhes do Caso
-            </Heading>
-          </View>
+    <View className="flex-1 bg-dentfyGray900">
+      <HeaderPerito
+        title="Detalhes do Caso"
+        showBackButton
+        onBackPress={() => router.back()}
+      />
 
-          <DetalhesCaso caso={caso} />
-          
-          <ListaVitimas vitimas={caso.vitimas} />
-          <ListaEvidencias evidencias={caso.evidencias} />
-          <ListaPeritos peritos={caso.peritos} />
-        </View>
+      <ScrollView className="flex-1 p-4">
+        <DetalhesCaso caso={caso} />
+        <ListaVitimas vitimas={caso.vitimas} />
+        <ListaEvidencias casoId={caso._id} />
+        <ListaPeritos peritos={caso.peritos} />
       </ScrollView>
     </View>
   );

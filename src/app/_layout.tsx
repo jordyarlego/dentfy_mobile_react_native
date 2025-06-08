@@ -61,23 +61,23 @@ export default function RootLayout() {
 
   if (!fontsLoaded || isLoading) {
     return (
-      <ToastProvider>
-        <SafeAreaProvider>
+      <SafeAreaProvider>
+        <ToastProvider>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.dentfyDarkBlue }}>
             <Body style={{ color: colors.dentfyTextPrimary }}>Carregando...</Body>
           </View>
-        </SafeAreaProvider>
-      </ToastProvider>
+        </ToastProvider>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <SafeAreaProvider>
+    <SafeAreaProvider>
+      <ToastProvider>
+        <AuthProvider>
           <Slot />
-        </SafeAreaProvider>
-      </AuthProvider>
-    </ToastProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </SafeAreaProvider>
   );
 }

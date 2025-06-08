@@ -67,7 +67,7 @@ export default function EditarEvidencia() {
         'titulo',
         'descricao',
         'tipo',
-        'coletadoPor',
+        'coletadaPor',
         'dataColeta',
         'local',
       ];
@@ -206,10 +206,10 @@ export default function EditarEvidencia() {
           </View>
 
           <View>
-            <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Coletado por *</Text>
+            <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Coletada por *</Text>
             <TextInput
-              value={formData.coletadoPor}
-              onChangeText={(value) => handleChange('coletadoPor', value)}
+              value={formData.coletadaPor}
+              onChangeText={(value) => handleChange('coletadaPor', value)}
               className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
               placeholder="Digite o nome do coletor"
               placeholderTextColor="#6B7280"
