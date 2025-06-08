@@ -21,7 +21,7 @@ export default function AppLayout() {
             <Stack.Screen name="casos" />
             <Stack.Screen name="caso/[id]" />
             <Stack.Screen name="caso/[id]/evidencia/nova" />
-            <Stack.Screen name="caso/[id]/vitima/novo" />
+            <Stack.Screen name="caso/[id]/vitima/nova" />
             <Stack.Screen name="caso/[id]/vitima/[vitimaId]" />
             <Stack.Screen name="caso/[id]/evidencia/[evidenciaId]" />
           </Stack>

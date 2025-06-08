@@ -366,7 +366,7 @@ export default function Casos() {
 
   const handleAddVitima = () => {
     if (casos.length > 0) {
-      router.push(`/caso/${casos[0]._id}/vitima/novo`);
+      router.push(`/caso/${casos[0]._id}/vitima/nova`);
     }
   };
 

@@ -8,7 +8,6 @@ import HeaderPerito from '../../../components/header';
 import DetalhesCaso from '../../../components/caso/DetalhesCaso';
 import ListaVitimas from '../../../components/caso/ListaVitimas';
 import ListaEvidencias from '../../../components/caso/ListaEvidencias';
-import ListaPeritos from '../../../components/caso/ListaPeritos';
 import { useToast } from '../../../contexts/ToastContext';
 import type { Caso } from '../../../types/caso';
 import { Heading, Body } from '../../../components/Typography';
@@ -112,9 +111,8 @@ export default function DetalhesCasoPage() {
 
       <ScrollView className="flex-1 p-4">
         <DetalhesCaso caso={caso} />
-        <ListaVitimas vitimas={caso.vitimas} />
+        <ListaVitimas casoId={caso._id} />
         <ListaEvidencias casoId={caso._id} />
-        <ListaPeritos peritos={caso.peritos} />
       </ScrollView>
     </View>
   );
