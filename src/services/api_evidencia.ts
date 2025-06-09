@@ -21,7 +21,7 @@ export interface CriarEvidenciaDTO {
   caso: string;
   titulo: string;
   local: string;
-  imagem?: File;
+  imagemUri?: string; // URI da imagem no dispositivo móvel
 }
 
 export interface AtualizarEvidenciaDTO
@@ -34,14 +34,23 @@ export const criarEvidencia = async (
   try {
     const formData = new FormData();
 
+    // Adiciona todos os campos exceto a imagem
     Object.entries(dados).forEach(([key, value]) => {
-      if (key !== "imagem") {
+      if (key !== "imagemUri" && value !== undefined) {
         formData.append(key, value);
       }
     });
 
-    if (dados.imagem) {
-      formData.append("imagem", dados.imagem);
+    // Adiciona a imagem se existir
+    if (dados.imagemUri) {
+      const uriParts = dados.imagemUri.split(".");
+      const fileType = uriParts[uriParts.length - 1];
+
+      formData.append("imagem", {
+        uri: dados.imagemUri,
+        name: `photo.${fileType}`,
+        type: `image/${fileType}`,
+      } as any);
     }
 
     const response = await api.post<Evidencia>("/api/evidences", formData, {

@@ -1,12 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Body } from '@/components/Typography';
-import { colors } from '@/theme/colors';
-import type { Evidencia, Caso, TipoEvidencia } from '@/types/caso';
-import { STORAGE_KEYS } from '@/types/caso';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  Modal,
+  ActivityIndicator,
+} from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { Body } from "@/components/Typography";
+import { colors } from "@/theme/colors";
+import type { Evidencia, Caso, TipoEvidencia } from "@/types/caso";
+import {
+  buscarEvidenciasPorCaso,
+  atualizarEvidencia,
+} from "@/services/api_evidencia";
 
 export default function EditarEvidencia() {
   const { id, evidenciaId } = useLocalSearchParams();
@@ -21,33 +31,30 @@ export default function EditarEvidencia() {
 
   const carregarEvidencia = async () => {
     try {
-      const casosStr = await AsyncStorage.getItem(STORAGE_KEYS.CASOS);
-      if (!casosStr) {
-        throw new Error('Caso não encontrado');
-      }
+      const evidencias = await buscarEvidenciasPorCaso(String(id));
+      const evidencia = evidencias.find(
+        (e) => String(e._id) === String(evidenciaId)
+      );
 
-      const casos = JSON.parse(casosStr) as Caso[];
-      const caso = casos.find((c) => String(c._id) === String(id));
-      if (!caso) {
-        throw new Error('Caso não encontrado');
-      }
-
-      const evidencia = caso.evidencias.find((e) => String(e._id) === String(evidenciaId));
       if (!evidencia) {
-        throw new Error('Evidência não encontrada');
+        throw new Error("Evidência não encontrada");
       }
 
       setFormData(evidencia);
     } catch (error) {
-      Alert.alert('Erro', 'Erro ao carregar evidência');
+      console.error("Erro ao carregar evidência:", error);
+      Alert.alert("Erro", "Erro ao carregar evidência");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (field: keyof Evidencia, value: string | TipoEvidencia) => {
+  const handleChange = (
+    field: keyof Evidencia,
+    value: string | TipoEvidencia
+  ) => {
     if (!formData) return;
-    setFormData((prev) => prev ? { ...prev, [field]: value } : null);
+    setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
   const handleSubmit = async () => {
@@ -57,13 +64,13 @@ export default function EditarEvidencia() {
       setSaving(true);
 
       // Validar campos obrigatórios
-      const camposObrigatorios: (keyof Omit<Evidencia, '_id' | 'createdAt' | 'imagemUri' | 'latitude' | 'longitude'>)[] = [
-        'titulo',
-        'descricao',
-        'tipo',
-        'coletadaPor',
-        'dataColeta',
-        'local',
+      const camposObrigatorios = [
+        "titulo",
+        "descricao",
+        "tipo",
+        "coletadaPor",
+        "dataColeta",
+        "local",
       ];
 
       const camposFaltantes = camposObrigatorios.filter(
@@ -72,43 +79,23 @@ export default function EditarEvidencia() {
 
       if (camposFaltantes.length > 0) {
         Alert.alert(
-          'Campos obrigatórios',
-          'Por favor, preencha todos os campos obrigatórios.'
+          "Campos obrigatórios",
+          "Por favor, preencha todos os campos obrigatórios."
         );
         return;
       }
 
-      // Carregar caso atual
-      const casosStr = await AsyncStorage.getItem(STORAGE_KEYS.CASOS);
-      if (!casosStr) {
-        throw new Error('Caso não encontrado');
-      }
+      await atualizarEvidencia(String(evidenciaId), formData);
 
-      const casos = JSON.parse(casosStr) as Caso[];
-      const casoIndex = casos.findIndex((c) => String(c._id) === String(id));
-      if (casoIndex === -1) {
-        throw new Error('Caso não encontrado');
-      }
-
-      // Atualizar evidência
-      const evidenciaIndex = casos[casoIndex].evidencias.findIndex(
-        (e) => String(e._id) === String(evidenciaId)
-      );
-      if (evidenciaIndex === -1) {
-        throw new Error('Evidência não encontrada');
-      }
-
-      casos[casoIndex].evidencias[evidenciaIndex] = formData;
-      await AsyncStorage.setItem(STORAGE_KEYS.CASOS, JSON.stringify(casos));
-
-      Alert.alert('Sucesso', 'Evidência atualizada com sucesso!', [
+      Alert.alert("Sucesso", "Evidência atualizada com sucesso!", [
         {
-          text: 'OK',
+          text: "OK",
           onPress: () => router.back(),
         },
       ]);
     } catch (error) {
-      Alert.alert('Erro', 'Erro ao atualizar evidência');
+      console.error("Erro ao atualizar evidência:", error);
+      Alert.alert("Erro", "Erro ao atualizar evidência");
     } finally {
       setSaving(false);
     }
@@ -136,10 +123,12 @@ export default function EditarEvidencia() {
 
           <View className="space-y-4">
             <View>
-              <Body className="text-base text-dentfyTextSecondary mb-1">Título *</Body>
+              <Body className="text-base text-dentfyTextSecondary mb-1">
+                Título *
+              </Body>
               <TextInput
                 value={formData.titulo}
-                onChangeText={(value) => handleChange('titulo', value)}
+                onChangeText={(value) => handleChange("titulo", value)}
                 className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
                 placeholder="Digite o título"
                 placeholderTextColor="#6B7280"
@@ -147,10 +136,12 @@ export default function EditarEvidencia() {
             </View>
 
             <View>
-              <Body className="text-base text-dentfyTextSecondary mb-1">Descrição *</Body>
+              <Body className="text-base text-dentfyTextSecondary mb-1">
+                Descrição *
+              </Body>
               <TextInput
                 value={formData.descricao}
-                onChangeText={(value) => handleChange('descricao', value)}
+                onChangeText={(value) => handleChange("descricao", value)}
                 className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
                 placeholder="Digite a descrição"
                 placeholderTextColor="#6B7280"
@@ -160,39 +151,41 @@ export default function EditarEvidencia() {
             </View>
 
             <View>
-              <Body className="text-base text-dentfyTextSecondary mb-1">Tipo *</Body>
+              <Body className="text-base text-dentfyTextSecondary mb-1">
+                Tipo *
+              </Body>
               <View className="flex-row gap-4">
                 <TouchableOpacity
-                  onPress={() => handleChange('tipo', 'imagem')}
+                  onPress={() => handleChange("tipo", "imagem")}
                   className={`flex-1 p-3 rounded-lg border ${
-                    formData.tipo === 'imagem'
-                      ? 'bg-dentfyAmber border-amber-500'
-                      : 'bg-dentfyGray800 border-dentfyGray700'
+                    formData.tipo === "imagem"
+                      ? "bg-dentfyAmber border-amber-500"
+                      : "bg-dentfyGray800 border-dentfyGray700"
                   }`}
                 >
                   <Body
                     className={`text-center ${
-                      formData.tipo === 'imagem'
-                        ? 'text-white'
-                        : 'text-dentfyTextSecondary'
+                      formData.tipo === "imagem"
+                        ? "text-white"
+                        : "text-dentfyTextSecondary"
                     }`}
                   >
                     Imagem
                   </Body>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => handleChange('tipo', 'documento')}
+                  onPress={() => handleChange("tipo", "documento")}
                   className={`flex-1 p-3 rounded-lg border ${
-                    formData.tipo === 'documento'
-                      ? 'bg-dentfyAmber border-amber-500'
-                      : 'bg-dentfyGray800 border-dentfyGray700'
+                    formData.tipo === "documento"
+                      ? "bg-dentfyAmber border-amber-500"
+                      : "bg-dentfyGray800 border-dentfyGray700"
                   }`}
                 >
                   <Body
                     className={`text-center ${
-                      formData.tipo === 'documento'
-                        ? 'text-white'
-                        : 'text-dentfyTextSecondary'
+                      formData.tipo === "documento"
+                        ? "text-white"
+                        : "text-dentfyTextSecondary"
                     }`}
                   >
                     Documento
@@ -202,10 +195,12 @@ export default function EditarEvidencia() {
             </View>
 
             <View>
-              <Body className="text-base text-dentfyTextSecondary mb-1">Coletada por *</Body>
+              <Body className="text-base text-dentfyTextSecondary mb-1">
+                Coletada por *
+              </Body>
               <TextInput
                 value={formData.coletadaPor}
-                onChangeText={(value) => handleChange('coletadaPor', value)}
+                onChangeText={(value) => handleChange("coletadaPor", value)}
                 className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
                 placeholder="Digite o nome do coletor"
                 placeholderTextColor="#6B7280"
@@ -213,10 +208,12 @@ export default function EditarEvidencia() {
             </View>
 
             <View>
-              <Body className="text-base text-dentfyTextSecondary mb-1">Data de coleta *</Body>
+              <Body className="text-base text-dentfyTextSecondary mb-1">
+                Data de coleta *
+              </Body>
               <TextInput
                 value={formData.dataColeta}
-                onChangeText={(value) => handleChange('dataColeta', value)}
+                onChangeText={(value) => handleChange("dataColeta", value)}
                 className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
                 placeholder="DD/MM/AAAA"
                 placeholderTextColor="#6B7280"
@@ -225,10 +222,12 @@ export default function EditarEvidencia() {
             </View>
 
             <View>
-              <Body className="text-base text-dentfyTextSecondary mb-1">Local *</Body>
+              <Body className="text-base text-dentfyTextSecondary mb-1">
+                Local *
+              </Body>
               <TextInput
                 value={formData.local}
-                onChangeText={(value) => handleChange('local', value)}
+                onChangeText={(value) => handleChange("local", value)}
                 className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
                 placeholder="Digite o local"
                 placeholderTextColor="#6B7280"
@@ -241,7 +240,9 @@ export default function EditarEvidencia() {
               onPress={() => router.back()}
               className="flex-1 p-4 bg-dentfyGray800 rounded-lg border border-dentfyGray700"
             >
-              <Body className="text-center text-dentfyTextSecondary">Cancelar</Body>
+              <Body className="text-center text-dentfyTextSecondary">
+                Cancelar
+              </Body>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSubmit}
@@ -249,7 +250,7 @@ export default function EditarEvidencia() {
               className="flex-1 p-4 bg-dentfyAmber rounded-lg"
             >
               <Body className="text-center text-white">
-                {saving ? 'Salvando...' : 'Salvar'}
+                {saving ? "Salvando..." : "Salvar"}
               </Body>
             </TouchableOpacity>
           </View>
@@ -257,4 +258,4 @@ export default function EditarEvidencia() {
       )}
     </View>
   );
-} 
+}
