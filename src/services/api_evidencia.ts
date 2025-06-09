@@ -2,26 +2,38 @@ import api from "./api";
 
 export interface Evidencia {
   _id: string;
-  tipo: "imagem" | "documento";
-  dataColeta: string;
-  coletadaPor: string;
-  descricao: string;
-  caso: string;
-  imagemUri?: string;
+  tipo: "imagem" | "texto";
   titulo: string;
-  local: string;
+  dataColeta: Date | string;
+  coletadoPor: string; // Removido o opcional
+  responsavel?: string;
+  caso: string;
+  periciado?: string;
+  localColeta: string;
+  latitude?: number;
+  longitude?: number;
+  imagemURL?: string;
+  descricao: string;
   createdAt: string;
 }
 
 export interface CriarEvidenciaDTO {
-  tipo: "imagem" | "documento";
-  dataColeta: string;
-  coletadaPor: string;
-  descricao: string;
-  caso: string;
+  tipo: "imagem" | "texto";
   titulo: string;
-  local: string;
-  imagem?: File;
+  dataColeta: Date | string;
+  coletadoPor: string; // Removido o opcional
+  responsavel?: string;
+  caso: string;
+  periciado?: string;
+  localColeta: string;
+  latitude?: number;
+  longitude?: number;
+  imagem?: {
+    uri: string;
+    type?: string;
+    name?: string;
+  };
+  descricao: string;
 }
 
 export interface AtualizarEvidenciaDTO
@@ -34,25 +46,55 @@ export const criarEvidencia = async (
   try {
     const formData = new FormData();
 
+    // Log para debug
+    console.log("Dados recebidos:", {
+      ...dados,
+      coletadoPor: dados.coletadoPor || "não definido",
+    });
+
+    // Tratar campos normais
     Object.entries(dados).forEach(([key, value]) => {
-      if (key !== "imagem") {
-        formData.append(key, value);
+      if (key !== "imagem" && value !== undefined) {
+        // Garantir que coletadoPor seja enviado corretamente
+        if (key === "coletadoPor") {
+          console.log("Adicionando coletadoPor:", value);
+        }
+        formData.append(key, String(value));
       }
     });
 
-    if (dados.imagem) {
-      formData.append("imagem", dados.imagem);
+    // Log do FormData
+    for (let [key, value] of formData.entries()) {
+      console.log(`FormData - ${key}:`, value);
     }
+
+    // Tratar imagem
+    if (dados.imagem?.uri) {
+      const uriParts = dados.imagem.uri.split(".");
+      const fileType = uriParts[uriParts.length - 1];
+
+      formData.append("imagem", {
+        uri: dados.imagem.uri,
+        name: `photo.${fileType}`,
+        type: `image/${fileType}`,
+      } as any);
+    }
+
+    console.log("Dados sendo enviados:", {
+      ...dados,
+      imagem: dados.imagem ? "presente" : "ausente",
+    });
 
     const response = await api.post<Evidencia>("/api/evidences", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
+      transformRequest: (data) => data,
     });
 
     return response.data;
   } catch (error) {
-    console.error("Erro ao criar evidência:", error);
+    console.error("Erro detalhado:", error.response?.data || error);
     throw error;
   }
 };
@@ -63,6 +105,7 @@ export const buscarEvidenciasPorCaso = async (
 ): Promise<Evidencia[]> => {
   try {
     const response = await api.get<Evidencia[]>(`/api/evidences/${casoId}`);
+    console.log("Evidências recebidas:", response.data); // Debug
     return response.data;
   } catch (error) {
     console.error("Erro ao buscar evidências:", error);

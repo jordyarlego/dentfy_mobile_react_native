@@ -1,38 +1,52 @@
-import React, { useState } from 'react';
-import { View, Modal, TouchableOpacity, TextInput, Text, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import type { Evidencia } from '../../types/caso';
+import React, { useState } from "react";
+import {
+  View,
+  Modal,
+  TouchableOpacity,
+  TextInput,
+  Text,
+  Alert,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import type { Evidencia } from "../../types/caso";
 
 interface ModalNovaEvidenciaProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (evidencia: Omit<Evidencia, '_id'>) => void;
+  onSave: (evidencia: Omit<Evidencia, "_id">) => void;
 }
 
-export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNovaEvidenciaProps) {
-  const [formData, setFormData] = useState<Omit<Evidencia, '_id'>>({
-    titulo: '',
-    descricao: '',
-    tipo: 'imagem',
-    coletadaPor: '',
-    dataColeta: '',
-    local: '',
-    createdAt: new Date().toISOString(),
+export default function ModalNovaEvidencia({
+  visible,
+  onClose,
+  onSave,
+}: ModalNovaEvidenciaProps) {
+  const [formData, setFormData] = useState<Omit<Evidencia, "_id">>({
+    tipo: "imagem",
+    titulo: "",
+    dataColeta: new Date(),
+    coletadoPor: "",
+    responsavel: "", // Novo campo
+    caso: "", // Novo campo
+    periciado: "", // Novo campo
+    localColeta: "",
+    descricao: "",
+    imagemURL: undefined,
   });
 
-  const handleChange = (field: keyof Omit<Evidencia, '_id'>, value: string) => {
+  const handleChange = (field: keyof Omit<Evidencia, "_id">, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = () => {
     // Validar campos obrigatórios
-    const camposObrigatorios: (keyof Omit<Evidencia, '_id'>)[] = [
-      'titulo',
-      'descricao',
-      'tipo',
-      'coletadaPor',
-      'dataColeta',
-      'local',
+    const camposObrigatorios: (keyof Omit<Evidencia, "_id">)[] = [
+      "titulo",
+      "descricao",
+      "tipo",
+      "coletadaPor",
+      "dataColeta",
+      "local",
     ];
 
     const camposFaltantes = camposObrigatorios.filter(
@@ -41,21 +55,24 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
 
     if (camposFaltantes.length > 0) {
       Alert.alert(
-        'Campos obrigatórios',
-        'Por favor, preencha todos os campos obrigatórios.'
+        "Campos obrigatórios",
+        "Por favor, preencha todos os campos obrigatórios."
       );
       return;
     }
 
     onSave(formData);
     setFormData({
-      titulo: '',
-      descricao: '',
-      tipo: 'imagem',
-      coletadaPor: '',
-      dataColeta: '',
-      local: '',
-      createdAt: new Date().toISOString(),
+      tipo: "imagem",
+      titulo: "",
+      dataColeta: new Date(),
+      coletadoPor: "",
+      responsavel: "", // Novo campo
+      caso: "", // Novo campo
+      periciado: "", // Novo campo
+      localColeta: "",
+      descricao: "",
+      imagemURL: undefined,
     });
   };
 
@@ -69,7 +86,9 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
       <View className="flex-1 bg-black/50 justify-end">
         <View className="bg-gray-900 rounded-t-3xl p-4">
           <View className="flex-row justify-between items-center mb-6">
-            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#F59E0B' }}>
+            <Text
+              style={{ fontSize: 24, fontWeight: "bold", color: "#F59E0B" }}
+            >
               Nova Evidência
             </Text>
             <TouchableOpacity onPress={onClose}>
@@ -79,10 +98,12 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
 
           <View className="space-y-4">
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Título *</Text>
+              <Text style={{ fontSize: 16, color: "#D1D5DB", marginBottom: 4 }}>
+                Título *
+              </Text>
               <TextInput
                 value={formData.titulo}
-                onChangeText={(value) => handleChange('titulo', value)}
+                onChangeText={(value) => handleChange("titulo", value)}
                 className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
                 placeholder="Digite o título"
                 placeholderTextColor="#6B7280"
@@ -90,10 +111,12 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
             </View>
 
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Descrição *</Text>
+              <Text style={{ fontSize: 16, color: "#D1D5DB", marginBottom: 4 }}>
+                Descrição *
+              </Text>
               <TextInput
                 value={formData.descricao}
-                onChangeText={(value) => handleChange('descricao', value)}
+                onChangeText={(value) => handleChange("descricao", value)}
                 className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
                 placeholder="Digite a descrição"
                 placeholderTextColor="#6B7280"
@@ -103,37 +126,40 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
             </View>
 
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Tipo *</Text>
+              <Text style={{ fontSize: 16, color: "#D1D5DB", marginBottom: 4 }}>
+                Tipo *
+              </Text>
               <View className="flex-row gap-4">
                 <TouchableOpacity
-                  onPress={() => handleChange('tipo', 'imagem')}
+                  onPress={() => handleChange("tipo", "imagem")}
                   className={`flex-1 p-3 rounded-lg border ${
-                    formData.tipo === 'imagem'
-                      ? 'bg-amber-600 border-amber-500'
-                      : 'bg-gray-800 border-gray-700'
+                    formData.tipo === "imagem"
+                      ? "bg-amber-600 border-amber-500"
+                      : "bg-gray-800 border-gray-700"
                   }`}
                 >
                   <Text
                     style={{
-                      textAlign: 'center',
-                      color: formData.tipo === 'imagem' ? '#FFFFFF' : '#D1D5DB',
+                      textAlign: "center",
+                      color: formData.tipo === "imagem" ? "#FFFFFF" : "#D1D5DB",
                     }}
                   >
                     Imagem
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => handleChange('tipo', 'documento')}
+                  onPress={() => handleChange("tipo", "documento")}
                   className={`flex-1 p-3 rounded-lg border ${
-                    formData.tipo === 'documento'
-                      ? 'bg-amber-600 border-amber-500'
-                      : 'bg-gray-800 border-gray-700'
+                    formData.tipo === "documento"
+                      ? "bg-amber-600 border-amber-500"
+                      : "bg-gray-800 border-gray-700"
                   }`}
                 >
                   <Text
                     style={{
-                      textAlign: 'center',
-                      color: formData.tipo === 'documento' ? '#FFFFFF' : '#D1D5DB',
+                      textAlign: "center",
+                      color:
+                        formData.tipo === "documento" ? "#FFFFFF" : "#D1D5DB",
                     }}
                   >
                     Documento
@@ -143,10 +169,12 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
             </View>
 
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Coletado por *</Text>
+              <Text style={{ fontSize: 16, color: "#D1D5DB", marginBottom: 4 }}>
+                Coletado por *
+              </Text>
               <TextInput
                 value={formData.coletadaPor}
-                onChangeText={(value) => handleChange('coletadaPor', value)}
+                onChangeText={(value) => handleChange("coletadaPor", value)}
                 className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
                 placeholder="Digite o nome do coletor"
                 placeholderTextColor="#6B7280"
@@ -154,10 +182,12 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
             </View>
 
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Data de coleta *</Text>
+              <Text style={{ fontSize: 16, color: "#D1D5DB", marginBottom: 4 }}>
+                Data de coleta *
+              </Text>
               <TextInput
                 value={formData.dataColeta}
-                onChangeText={(value) => handleChange('dataColeta', value)}
+                onChangeText={(value) => handleChange("dataColeta", value)}
                 className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
                 placeholder="DD/MM/AAAA"
                 placeholderTextColor="#6B7280"
@@ -166,10 +196,12 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
             </View>
 
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Local *</Text>
+              <Text style={{ fontSize: 16, color: "#D1D5DB", marginBottom: 4 }}>
+                Local *
+              </Text>
               <TextInput
                 value={formData.local}
-                onChangeText={(value) => handleChange('local', value)}
+                onChangeText={(value) => handleChange("local", value)}
                 className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
                 placeholder="Digite o local"
                 placeholderTextColor="#6B7280"
@@ -182,17 +214,21 @@ export default function ModalNovaEvidencia({ visible, onClose, onSave }: ModalNo
               onPress={onClose}
               className="flex-1 p-4 bg-gray-800 rounded-lg border border-gray-700"
             >
-              <Text style={{ textAlign: 'center', color: '#D1D5DB' }}>Cancelar</Text>
+              <Text style={{ textAlign: "center", color: "#D1D5DB" }}>
+                Cancelar
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSubmit}
               className="flex-1 p-4 bg-amber-600 rounded-lg"
             >
-              <Text style={{ textAlign: 'center', color: '#FFFFFF' }}>Salvar</Text>
+              <Text style={{ textAlign: "center", color: "#FFFFFF" }}>
+                Salvar
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
     </Modal>
   );
-} 
+}

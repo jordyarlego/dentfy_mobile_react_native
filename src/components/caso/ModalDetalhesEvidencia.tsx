@@ -1,7 +1,14 @@
-import React from 'react';
-import { View, Modal, TouchableOpacity, Text, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import type { Evidencia } from '../../types/caso';
+import React from "react";
+import {
+  View,
+  Modal,
+  TouchableOpacity,
+  Text,
+  ScrollView,
+  Image,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import type { Evidencia } from "../../types/evidencia";
 
 interface ModalDetalhesEvidenciaProps {
   visible: boolean;
@@ -28,7 +35,9 @@ export default function ModalDetalhesEvidencia({
       <View className="flex-1 bg-black/50 justify-end">
         <View className="bg-gray-900 rounded-t-3xl p-4">
           <View className="flex-row justify-between items-center mb-6">
-            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#F59E0B' }}>
+            <Text
+              style={{ fontSize: 24, fontWeight: "bold", color: "#F59E0B" }}
+            >
               Detalhes da Evidência
             </Text>
             <TouchableOpacity onPress={onClose}>
@@ -38,36 +47,32 @@ export default function ModalDetalhesEvidencia({
 
           <ScrollView className="space-y-4">
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Título</Text>
-              <Text style={{ fontSize: 18, color: '#FFFFFF' }}>{evidencia.titulo}</Text>
+              <Text className="text-dentfyTextSecondary">Título</Text>
+              <Text className="text-dentfyTextPrimary">{evidencia.titulo}</Text>
             </View>
-
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Descrição</Text>
-              <Text style={{ fontSize: 18, color: '#FFFFFF' }}>{evidencia.descricao}</Text>
-            </View>
-
-            <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Tipo</Text>
-              <Text style={{ fontSize: 18, color: '#FFFFFF' }}>
-                {evidencia.tipo === 'imagem' ? 'Imagem' : 'Documento'}
+              <Text className="text-dentfyTextSecondary">Local</Text>
+              <Text className="text-dentfyTextPrimary">
+                {evidencia.localColeta}
               </Text>
             </View>
-
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Coletada por</Text>
-              <Text style={{ fontSize: 18, color: '#FFFFFF' }}>{evidencia.coletadaPor}</Text>
+              <Text className="text-dentfyTextSecondary">Tipo</Text>
+              <Text className="text-dentfyTextPrimary">{evidencia.tipo}</Text>
             </View>
-
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Data de coleta</Text>
-              <Text style={{ fontSize: 18, color: '#FFFFFF' }}>{evidencia.dataColeta}</Text>
+              <Text className="text-dentfyTextSecondary">Coletado por</Text>
+              <Text className="text-dentfyTextPrimary">
+                {evidencia.coletadoPor}
+              </Text>
             </View>
-
-            <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Local</Text>
-              <Text style={{ fontSize: 18, color: '#FFFFFF' }}>{evidencia.local}</Text>
-            </View>
+            {evidencia.imagemURL && (
+              <Image
+                source={{ uri: evidencia.imagemURL }}
+                className="w-full h-48 rounded-lg"
+                resizeMode="cover"
+              />
+            )}
           </ScrollView>
 
           <View className="flex-row gap-4 mt-6">
@@ -75,17 +80,21 @@ export default function ModalDetalhesEvidencia({
               onPress={onDelete}
               className="flex-1 p-4 bg-red-600 rounded-lg"
             >
-              <Text style={{ textAlign: 'center', color: '#FFFFFF' }}>Excluir</Text>
+              <Text style={{ textAlign: "center", color: "#FFFFFF" }}>
+                Excluir
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={onEdit}
               className="flex-1 p-4 bg-amber-600 rounded-lg"
             >
-              <Text style={{ textAlign: 'center', color: '#FFFFFF' }}>Editar</Text>
+              <Text style={{ textAlign: "center", color: "#FFFFFF" }}>
+                Editar
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
     </Modal>
   );
-} 
+}

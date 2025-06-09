@@ -1,17 +1,22 @@
-import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import type { ImagePickerResult } from 'expo-image-picker';
+import type { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import type { ImagePickerResult } from "expo-image-picker";
 
-export type TipoEvidencia = 'imagem' | 'documento';
+export type TipoEvidencia = "imagem" | "documento";
 
 export interface Evidencia {
   _id: string;
+  tipo: "imagem" | "texto";
   titulo: string;
-  dataColeta: string;
-  tipo: TipoEvidencia;
-  local: string;
-  coletadaPor: string;
+  dataColeta: Date | string;
+  coletadoPor?: string; // Agora opcional
+  responsavel?: string; // Agora opcional
+  caso: string;
+  periciado?: string; // Agora opcional
+  localColeta: string;
+  latitude?: number;
+  longitude?: number;
+  imagemURL?: string;
   descricao: string;
-  imagemUri?: string;
   createdAt: string;
 }
 
@@ -21,7 +26,20 @@ export interface Caso {
   // outros campos do caso...
 }
 
-export interface EvidenciaFormState extends Omit<Evidencia, '_id' | 'createdAt'> {}
+export interface EvidenciaFormState {
+  tipo: "imagem" | "texto";
+  titulo: string;
+  dataColeta: Date | string;
+  coletadoPor: string;
+  responsavel: string;
+  caso: string;
+  periciado: string;
+  localColeta: string;
+  latitude?: number;
+  longitude?: number;
+  imagemURL?: string;
+  descricao: string;
+}
 
 export interface NovaEvidenciaState {
   isSubmitting: boolean;
@@ -34,15 +52,13 @@ export type ImagePickerResponse = ImagePickerResult & {
   canceled: boolean;
   assets: Array<{
     uri: string;
-    width: number;
-    height: number;
-    type?: string;
-    fileName?: string;
-    fileSize?: number;
+    // ... outros campos do asset
   }>;
 };
 
 export type DateTimePickerResponse = {
-  event: DateTimePickerEvent;
-  date?: Date;
-}; 
+  type: string;
+  nativeEvent: {
+    timestamp?: number;
+  };
+};
