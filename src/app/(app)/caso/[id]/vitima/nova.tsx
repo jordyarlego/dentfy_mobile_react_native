@@ -9,14 +9,15 @@ import HeaderPerito from '../../../../../components/header';
 import { useToast } from '../../../../../contexts/ToastContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
+import { criarVitima } from '../../../../../services/api_vitima';
 import type { Vitima } from '../../../../../types/caso';
 
 const STORAGE_KEYS = {
   CASOS: '@dentify_casos',
 } as const;
 
-type Etnia = 'branca' | 'preta' | 'parda' | 'amarela' | 'indigena' | 'outro';
-type Sexo = 'masculino' | 'feminino' | 'outro';
+type Etnia = 'Branca' | 'Preta' | 'Parda' | 'Amarela' | 'Indígena' | 'Outro';
+type Sexo = 'Masculino' | 'Feminino' | 'Outro';
 
 interface VitimaFormState {
   nome: string;
@@ -58,87 +59,59 @@ export default function NovaVitima() {
   };
 
   const handleSubmit = async () => {
-    try {
-      setLoading(true);
-      setIsSaved(false);
+  try {
+    setLoading(true);
+    setIsSaved(false);
 
-      // Validações básicas
-      if (!formData.nome.trim()) {
-        showToast('Nome é obrigatório', 'error');
-        return;
-      }
-
-      if (!formData.cpf.trim()) {
-        showToast('CPF é obrigatório', 'error');
-        return;
-      }
-
-      // Validação básica de CPF (apenas se tem 11 dígitos)
-      if (formData.cpf.replace(/\D/g, '').length !== 11) {
-        showToast('CPF deve ter 11 dígitos', 'error');
-        return;
-      }
-
-      console.log('NovaVitima: Iniciando salvamento para caso:', id);
-      
-      // Carregar casos existentes
-      const casosStr = await AsyncStorage.getItem(STORAGE_KEYS.CASOS);
-      console.log('NovaVitima: Casos carregados:', casosStr ? 'Sim' : 'Não');
-      
-      let casos = [];
-      if (casosStr) {
-        casos = JSON.parse(casosStr);
-        console.log('NovaVitima: Total de casos:', casos.length);
-      }
-
-      // Encontrar o caso atual
-      const casoIndex = casos.findIndex((c: any) => String(c._id) === String(id));
-      console.log('NovaVitima: Índice do caso:', casoIndex);
-      
-      if (casoIndex === -1) {
-        showToast('Caso não encontrado', 'error');
-        return;
-      }
-
-      // Criar nova vítima
-      const novaVitima = {
-        _id: Date.now().toString(), // ID temporário
-        ...formData,
-        dataNascimento: formData.dataNascimento.toISOString(),
-      };
-      console.log('NovaVitima: Nova vítima criada:', novaVitima);
-
-      // Adicionar vítima ao caso
-      if (!casos[casoIndex].vitimas) {
-        console.log('NovaVitima: Inicializando array de vítimas');
-        casos[casoIndex].vitimas = [];
-      }
-      casos[casoIndex].vitimas.push(novaVitima);
-      console.log('NovaVitima: Total de vítimas após adicionar:', casos[casoIndex].vitimas.length);
-
-      // Salvar no AsyncStorage
-      await AsyncStorage.setItem(STORAGE_KEYS.CASOS, JSON.stringify(casos));
-      console.log('NovaVitima: Casos salvos no AsyncStorage');
-
-      // Simular delay para feedback visual
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Mostrar feedback de sucesso
-      setIsSaved(true);
-
-      // Aguardar mais um momento para mostrar o feedback
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Voltar para a tela anterior
-      router.back();
-    } catch (error: any) {
-      console.error('NovaVitima: Erro ao adicionar vítima:', error);
-      showToast(error.message || 'Erro ao adicionar vítima', 'error');
-    } finally {
+    // Validações básicas
+    if (!formData.nome.trim()) {
+      showToast('Nome é obrigatório', 'error');
       setLoading(false);
+      return;
     }
-  };
 
+    if (!formData.cpf.trim()) {
+      showToast('CPF é obrigatório', 'error');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.cpf.replace(/\D/g, '').length !== 11) {
+      showToast('CPF deve ter 11 dígitos', 'error');
+      setLoading(false);
+      return;
+    }
+
+    // Montar objeto para enviar ao backend
+    const dadosParaEnvio = {
+      nomeCompleto: formData.nome,
+      cpf: formData.cpf,
+      dataNascimento: formData.dataNascimento.toISOString(),
+      sexo: formData.sexo.charAt(0).toUpperCase() + formData.sexo.slice(1), // 'Masculino', 'Feminino' ou 'Outro'
+      endereco: formData.endereco,
+      etnia: formData.etnia.charAt(0).toUpperCase() + formData.etnia.slice(1), // 'Branca', 'Preta', etc
+      caso: id, // ID do caso, vindo do useLocalSearchParams
+    };
+
+    console.log('Enviando dados para criar vítima:', dadosParaEnvio);
+
+    // Chamar API para criar vítima
+    await criarVitima(dadosParaEnvio);
+
+    setIsSaved(true);
+    showToast('Vítima salva com sucesso!', 'success');
+
+    // Aguardar um pouco para mostrar o feedback visual
+    await new Promise(res => setTimeout(res, 1000));
+
+    router.back();
+  } catch (error: any) {
+    console.error('Erro ao adicionar vítima:', error);
+    showToast(error.message || 'Erro ao adicionar vítima', 'error');
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <View className="flex-1 bg-dentfyGray900">
       <HeaderPerito showBackButton />
@@ -256,12 +229,12 @@ export default function NovaVitima() {
                 dropdownIconColor="white"
                 enabled={!loading}
               >
-                <Picker.Item label="Branca" value="branca" />
-                <Picker.Item label="Preta" value="preta" />
-                <Picker.Item label="Parda" value="parda" />
-                <Picker.Item label="Amarela" value="amarela" />
-                <Picker.Item label="Indígena" value="indigena" />
-                <Picker.Item label="Outro" value="outro" />
+                <Picker.Item label="Branca" value="Branca" />
+                <Picker.Item label="Preta" value="Preta" />
+                <Picker.Item label="Parda" value="Parda" />
+                <Picker.Item label="Amarela" value="Amarela" />
+                <Picker.Item label="Indígena" value="Indígena" />
+                <Picker.Item label="Outro" value="Outro" />
               </Picker>
             </View>
           </View>

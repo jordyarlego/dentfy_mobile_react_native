@@ -18,7 +18,6 @@ export default function ModalNovaVitima({ visible, onClose, onSave }: ModalNovaV
     etnia: '',
     endereco: '',
     cpf: '',
-    nic: '',
   });
 
   const handleChange = (field: keyof Omit<Vitima, '_id'>, value: string) => {
@@ -34,7 +33,6 @@ export default function ModalNovaVitima({ visible, onClose, onSave }: ModalNovaV
       'etnia',
       'endereco',
       'cpf',
-      'nic',
     ];
 
     const camposFaltantes = camposObrigatorios.filter(
@@ -57,7 +55,6 @@ export default function ModalNovaVitima({ visible, onClose, onSave }: ModalNovaV
       etnia: '',
       endereco: '',
       cpf: '',
-      nic: '',
     });
   };
 
@@ -177,16 +174,6 @@ export default function ModalNovaVitima({ visible, onClose, onSave }: ModalNovaV
               />
             </View>
 
-            <View>
-              <Text className="text-base text-dentfyTextPrimary mb-1">NIC *</Text>
-              <TextInput
-                value={formData.nic}
-                onChangeText={(value) => handleChange('nic', value)}
-                className="bg-dentfyGray800 text-dentfyTextPrimary p-3 rounded-lg border border-dentfyBorderGray"
-                placeholder="Digite o NIC"
-                placeholderTextColor={colors.dentfyTextSecondary}
-              />
-            </View>
           </View>
 
           <View className="flex-row gap-4 mt-6">

@@ -1,120 +1,85 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, TouchableOpacity, TextInput, Text, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Body } from '@/components/Typography';
 import { colors } from '@/theme/colors';
-import type { Vitima, Caso } from '@/types/caso';
-import { STORAGE_KEYS } from '@/types/caso';
+import type { Vitima } from '@/services/api_vitima'; // supondo que você tenha exportado lá
+import {
+  buscarVitimaPorId,
+  atualizarVitima,
+} from '@/services/api_vitima';
 
-type Sexo = 'masculino' | 'feminino' | 'outro';
-type Etnia = 'branca' | 'preta' | 'parda' | 'amarela' | 'indigena' | 'outro';
+type Sexo = 'Masculino' | 'Feminino' | 'Outro';
+type Etnia = 'Preto' | 'Pardo' | 'Branco' | 'Amarelo' | 'Indígena';
 
 export default function EditarVitima() {
-  const { id, vitimaId } = useLocalSearchParams();
+  const { vitimaId } = useLocalSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Vitima | null>(null);
 
   useEffect(() => {
-    carregarVitima();
-  }, [id, vitimaId]);
+    if (typeof vitimaId === 'string') {
+      carregarVitima(vitimaId);
+    }
+  }, [vitimaId]);
 
-  const carregarVitima = async () => {
+  const carregarVitima = async (id: string) => {
     try {
-      const casosStr = await AsyncStorage.getItem(STORAGE_KEYS.CASOS);
-      if (!casosStr) {
-        throw new Error('Caso não encontrado');
-      }
-
-      const casos = JSON.parse(casosStr) as Caso[];
-      const caso = casos.find((c) => String(c._id) === String(id));
-      if (!caso) {
-        throw new Error('Caso não encontrado');
-      }
-
-      const vitima = caso.vitimas.find((v) => String(v._id) === String(vitimaId));
-      if (!vitima) {
-        throw new Error('Vítima não encontrada');
-      }
-
+      setLoading(true);
+      const vitima = await buscarVitimaPorId(id);
       setFormData(vitima);
     } catch (error) {
       Alert.alert('Erro', 'Erro ao carregar vítima', [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
+        { text: 'OK', onPress: () => router.back() },
       ]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (field: keyof Vitima, value: string) => {
+  const handleChange = (field: keyof Vitima, value: any) => {
     if (!formData) return;
-    setFormData((prev) => prev ? { ...prev, [field]: value } : null);
+    setFormData(prev => prev ? { ...prev, [field]: value } : null);
   };
 
   const handleSubmit = async () => {
-    if (!formData) return;
+    if (!formData || !vitimaId) return;
+
+    // Validar campos obrigatórios
+    const camposObrigatorios: (keyof Omit<Vitima, '_id' | 'criadoEm' | 'odontograma' | 'caso'>)[] = [
+      'nomeCompleto',
+      'dataNascimento',
+      'sexo',
+      'etnia',
+      'endereco',
+      'cpf',
+      'nic',
+    ];
+
+    const camposFaltantes = camposObrigatorios.filter(
+      campo => !formData[campo] || formData[campo]?.toString().trim() === ''
+    );
+
+    if (camposFaltantes.length > 0) {
+      Alert.alert(
+        'Campos obrigatórios',
+        'Por favor, preencha todos os campos obrigatórios.'
+      );
+      return;
+    }
 
     try {
       setSaving(true);
+      // Montar dados para atualizar (remover _id, criadoEm, odontograma, caso)
+      const {
+        _id, criadoEm, odontograma, caso, ...dadosAtualizar
+      } = formData;
 
-      // Validar campos obrigatórios
-      const camposObrigatorios: (keyof Omit<Vitima, '_id'>)[] = [
-        'nome',
-        'dataNascimento',
-        'sexo',
-        'etnia',
-        'endereco',
-        'cpf',
-        'nic',
-      ];
-
-      const camposFaltantes = camposObrigatorios.filter(
-        (campo) => !formData[campo]
-      );
-
-      if (camposFaltantes.length > 0) {
-        Alert.alert(
-          'Campos obrigatórios',
-          'Por favor, preencha todos os campos obrigatórios.'
-        );
-        return;
-      }
-
-      // Carregar caso atual
-      const casosStr = await AsyncStorage.getItem(STORAGE_KEYS.CASOS);
-      if (!casosStr) {
-        throw new Error('Caso não encontrado');
-      }
-
-      const casos = JSON.parse(casosStr) as Caso[];
-      const casoIndex = casos.findIndex((c) => String(c._id) === String(id));
-      if (casoIndex === -1) {
-        throw new Error('Caso não encontrado');
-      }
-
-      // Atualizar vítima
-      const vitimaIndex = casos[casoIndex].vitimas.findIndex(
-        (v) => String(v._id) === String(vitimaId)
-      );
-      if (vitimaIndex === -1) {
-        throw new Error('Vítima não encontrada');
-      }
-
-      casos[casoIndex].vitimas[vitimaIndex] = formData;
-      await AsyncStorage.setItem(STORAGE_KEYS.CASOS, JSON.stringify(casos));
-
+      await atualizarVitima(vitimaId, dadosAtualizar);
       Alert.alert('Sucesso', 'Vítima atualizada com sucesso!', [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
+        { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error) {
       Alert.alert('Erro', 'Erro ao atualizar vítima');
@@ -145,10 +110,10 @@ export default function EditarVitima() {
 
         <View className="space-y-4">
           <View>
-            <Body className="text-base text-dentfyTextSecondary mb-1">Nome *</Body>
+            <Body className="text-base text-dentfyTextSecondary mb-1">Nome Completo *</Body>
             <TextInput
-              value={formData.nome}
-              onChangeText={(value) => handleChange('nome', value)}
+              value={formData.nomeCompleto}
+              onChangeText={value => handleChange('nomeCompleto', value)}
               className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
               placeholder="Digite o nome completo"
               placeholderTextColor="#6B7280"
@@ -159,7 +124,7 @@ export default function EditarVitima() {
             <Body className="text-base text-dentfyTextSecondary mb-1">Data de nascimento *</Body>
             <TextInput
               value={formData.dataNascimento}
-              onChangeText={(value) => handleChange('dataNascimento', value)}
+              onChangeText={value => handleChange('dataNascimento', value)}
               className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
               placeholder="DD/MM/AAAA"
               placeholderTextColor="#6B7280"
@@ -170,61 +135,58 @@ export default function EditarVitima() {
           <View>
             <Body className="text-base text-dentfyTextSecondary mb-1">Sexo *</Body>
             <View className="flex-row gap-4">
-              <TouchableOpacity
-                onPress={() => handleChange('sexo', 'masculino')}
-                className={`flex-1 p-3 rounded-lg border ${
-                  formData.sexo === 'masculino'
-                    ? 'bg-dentfyAmber border-amber-500'
-                    : 'bg-dentfyGray800 border-dentfyGray700'
-                }`}
-              >
-                <Body
-                  className={`text-center ${
-                    formData.sexo === 'masculino'
-                      ? 'text-white'
-                      : 'text-dentfyTextSecondary'
+              {['Masculino', 'Feminino', 'Outro'].map((sexo) => (
+                <TouchableOpacity
+                  key={sexo}
+                  onPress={() => handleChange('sexo', sexo as Sexo)}
+                  className={`flex-1 p-3 rounded-lg border ${
+                    formData.sexo === sexo
+                      ? 'bg-dentfyAmber border-amber-500'
+                      : 'bg-dentfyGray800 border-dentfyGray700'
                   }`}
                 >
-                  Masculino
-                </Body>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => handleChange('sexo', 'feminino')}
-                className={`flex-1 p-3 rounded-lg border ${
-                  formData.sexo === 'feminino'
-                    ? 'bg-dentfyAmber border-amber-500'
-                    : 'bg-dentfyGray800 border-dentfyGray700'
-                }`}
-              >
-                <Body
-                  className={`text-center ${
-                    formData.sexo === 'feminino'
-                      ? 'text-white'
-                      : 'text-dentfyTextSecondary'
-                  }`}
-                >
-                  Feminino
-                </Body>
-              </TouchableOpacity>
+                  <Body
+                    className={`text-center ${
+                      formData.sexo === sexo ? 'text-white' : 'text-dentfyTextSecondary'
+                    }`}
+                  >
+                    {sexo}
+                  </Body>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
 
           <View>
             <Body className="text-base text-dentfyTextSecondary mb-1">Etnia *</Body>
-            <TextInput
-              value={formData.etnia}
-              onChangeText={(value) => handleChange('etnia', value as Etnia)}
-              className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
-              placeholder="Digite a etnia"
-              placeholderTextColor="#6B7280"
-            />
+            <View className="flex-row flex-wrap gap-2">
+              {['Preto', 'Pardo', 'Branco', 'Amarelo', 'Indígena'].map((etnia) => (
+                <TouchableOpacity
+                  key={etnia}
+                  onPress={() => handleChange('etnia', etnia as Etnia)}
+                  className={`px-4 py-2 rounded-lg border ${
+                    formData.etnia === etnia
+                      ? 'bg-dentfyAmber border-amber-500'
+                      : 'bg-dentfyGray800 border-dentfyGray700'
+                  }`}
+                >
+                  <Body
+                    className={`text-center ${
+                      formData.etnia === etnia ? 'text-white' : 'text-dentfyTextSecondary'
+                    }`}
+                  >
+                    {etnia}
+                  </Body>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           <View>
             <Body className="text-base text-dentfyTextSecondary mb-1">Endereço *</Body>
             <TextInput
               value={formData.endereco}
-              onChangeText={(value) => handleChange('endereco', value)}
+              onChangeText={value => handleChange('endereco', value)}
               className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
               placeholder="Digite o endereço completo"
               placeholderTextColor="#6B7280"
@@ -237,7 +199,7 @@ export default function EditarVitima() {
             <Body className="text-base text-dentfyTextSecondary mb-1">CPF *</Body>
             <TextInput
               value={formData.cpf}
-              onChangeText={(value) => handleChange('cpf', value.replace(/\D/g, ''))}
+              onChangeText={value => handleChange('cpf', value.replace(/\D/g, ''))}
               className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
               placeholder="Digite o CPF"
               placeholderTextColor="#6B7280"
@@ -250,7 +212,7 @@ export default function EditarVitima() {
             <Body className="text-base text-dentfyTextSecondary mb-1">NIC *</Body>
             <TextInput
               value={formData.nic}
-              onChangeText={(value) => handleChange('nic', value)}
+              onChangeText={value => handleChange('nic', value)}
               className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
               placeholder="Digite o NIC"
               placeholderTextColor="#6B7280"
@@ -278,4 +240,4 @@ export default function EditarVitima() {
       </View>
     </ScrollView>
   );
-} 
+}

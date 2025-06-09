@@ -1,15 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Heading, Body } from '../Typography';
 import { colors } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buscarVitimasPorCaso } from '../../services/api_vitima'; // <-- AQUI
 import type { Vitima } from '../../types/caso';
-
-const STORAGE_KEYS = {
-  CASOS: '@dentify_casos',
-} as const;
 
 export interface ListaVitimasProps {
   casoId: string;
@@ -24,35 +20,11 @@ export default function ListaVitimas({ casoId }: ListaVitimasProps) {
 
   const carregarVitimas = async () => {
     try {
-      console.log('ListaVitimas: Carregando vítimas para caso:', casoId);
       setLoading(true);
-      const casosStr = await AsyncStorage.getItem(STORAGE_KEYS.CASOS);
-      console.log('ListaVitimas: Casos carregados:', casosStr ? 'Sim' : 'Não');
-
-      if (!casosStr) {
-        console.log('ListaVitimas: Nenhum caso encontrado');
-        setVitimas([]);
-        return;
-      }
-
-      const casos = JSON.parse(casosStr);
-      console.log('ListaVitimas: Total de casos:', casos.length);
-      
-      const caso = casos.find((c: any) => String(c._id) === String(casoId));
-      console.log('ListaVitimas: Caso encontrado:', caso ? 'Sim' : 'Não');
-      console.log('ListaVitimas: Dados do caso:', JSON.stringify(caso, null, 2));
-      
-      if (!caso) {
-        console.log('ListaVitimas: Caso não encontrado com ID:', casoId);
-        setVitimas([]);
-        return;
-      }
-
-      console.log('ListaVitimas: Vítimas encontradas:', caso.vitimas?.length || 0);
-      console.log('ListaVitimas: Dados das vítimas:', JSON.stringify(caso.vitimas, null, 2));
-      setVitimas(Array.isArray(caso.vitimas) ? caso.vitimas : []);
+      const data = await buscarVitimasPorCaso(casoId); // <-- AQUI
+      setVitimas(data);
     } catch (error) {
-      console.error('ListaVitimas: Erro ao carregar vítimas:', error);
+      console.error('Erro ao carregar vítimas do backend:', error);
       setVitimas([]);
     } finally {
       setLoading(false);
@@ -101,7 +73,7 @@ export default function ListaVitimas({ casoId }: ListaVitimasProps) {
           {vitimas.map((vitima) => (
             <View key={vitima._id} className="bg-dentfyGray800/30 p-4 rounded-lg">
               <Body className="text-dentfyTextPrimary">
-                {vitima.nome}
+                {vitima.nomeCompleto}
               </Body>
               <Body className="text-dentfyTextSecondary text-sm mt-1">
                 CPF: {vitima.cpf}
@@ -112,11 +84,7 @@ export default function ListaVitimas({ casoId }: ListaVitimasProps) {
       )}
 
       {/* Modal de Feedback */}
-      <Modal
-        visible={isSubmitting}
-        transparent
-        animationType="fade"
-      >
+      <Modal visible={isSubmitting} transparent animationType="fade">
         <View className="flex-1 bg-black/50 items-center justify-center">
           <View className="bg-dentfyGray800 p-8 rounded-lg items-center min-w-[200px]">
             {isSaved ? (
