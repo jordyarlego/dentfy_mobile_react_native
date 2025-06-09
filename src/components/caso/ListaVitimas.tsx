@@ -4,8 +4,8 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Heading, Body } from '../Typography';
 import { colors } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { buscarVitimasPorCaso } from '../../services/api_vitima'; // <-- AQUI
-import type { Vitima } from '../../types/caso';
+import { buscarVitimasPorCaso } from '../../services/api_vitima';
+import type { Vitima } from '../../services/api_vitima';
 
 export interface ListaVitimasProps {
   casoId: string;
@@ -21,7 +21,7 @@ export default function ListaVitimas({ casoId }: ListaVitimasProps) {
   const carregarVitimas = async () => {
     try {
       setLoading(true);
-      const data = await buscarVitimasPorCaso(casoId); // <-- AQUI
+      const data = await buscarVitimasPorCaso(casoId);
       setVitimas(data);
     } catch (error) {
       console.error('Erro ao carregar vítimas do backend:', error);
@@ -39,6 +39,25 @@ export default function ListaVitimas({ casoId }: ListaVitimasProps) {
 
   const handleAddVitima = () => {
     router.push(`/caso/${casoId}/vitima/nova`);
+  };
+
+  const handleVitimaPress = (vitimaId: string) => {
+    router.push(`/caso/${casoId}/vitima/${vitimaId}`);
+  };
+
+  const formatarCPF = (cpf: string) => {
+    if (!cpf) return '';
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  };
+
+  const formatarData = (data: string) => {
+    if (!data) return '';
+    try {
+      const date = new Date(data);
+      return date.toLocaleDateString('pt-BR');
+    } catch {
+      return data;
+    }
   };
 
   return (
@@ -69,15 +88,73 @@ export default function ListaVitimas({ casoId }: ListaVitimasProps) {
           </Body>
         </View>
       ) : (
-        <View className="space-y-2">
-          {vitimas.map((vitima) => (
-            <View key={vitima._id} className="bg-dentfyGray800/30 p-4 rounded-lg">
-              <Body className="text-dentfyTextPrimary">
-                {vitima.nomeCompleto}
-              </Body>
-              <Body className="text-dentfyTextSecondary text-sm mt-1">
-                CPF: {vitima.cpf}
-              </Body>
+        <View className="space-y-4">
+          {vitimas.map((vitima, index) => (
+            <View key={vitima._id}>
+              <TouchableOpacity
+                onPress={() => handleVitimaPress(vitima._id)}
+                className="bg-dentfyGray800/30 p-4 rounded-lg border border-dentfyGray700/30 active:bg-dentfyGray800/50"
+              >
+                <View className="flex-row justify-between items-start">
+                  <View className="flex-1">
+                    <Body className="text-dentfyTextPrimary font-semibold text-lg mb-2">
+                      {vitima.nomeCompleto}
+                    </Body>
+                    
+                    <View className="space-y-1">
+                      <View className="flex-row items-center">
+                        <Ionicons name="card-outline" size={16} color={colors.dentfyTextSecondary} />
+                        <Body className="text-dentfyTextSecondary text-sm ml-2">
+                          CPF: {formatarCPF(vitima.cpf)}
+                        </Body>
+                      </View>
+                      
+                      <View className="flex-row items-center">
+                        <Ionicons name="calendar-outline" size={16} color={colors.dentfyTextSecondary} />
+                        <Body className="text-dentfyTextSecondary text-sm ml-2">
+                          Nascimento: {formatarData(vitima.dataNascimento)}
+                        </Body>
+                      </View>
+                      
+                      <View className="flex-row items-center">
+                        <Ionicons name="person-outline" size={16} color={colors.dentfyTextSecondary} />
+                        <Body className="text-dentfyTextSecondary text-sm ml-2">
+                          Sexo: {vitima.sexo}
+                        </Body>
+                      </View>
+                      
+                      <View className="flex-row items-center">
+                        <Ionicons name="people-outline" size={16} color={colors.dentfyTextSecondary} />
+                        <Body className="text-dentfyTextSecondary text-sm ml-2">
+                          Etnia: {vitima.etnia}
+                        </Body>
+                      </View>
+                      
+                      {vitima.endereco && (
+                        <View className="flex-row items-start">
+                          <Ionicons name="location-outline" size={16} color={colors.dentfyTextSecondary} style={{ marginTop: 2 }} />
+                          <Body className="text-dentfyTextSecondary text-sm ml-2 flex-1">
+                            {vitima.endereco}
+                          </Body>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  
+                  <View className="ml-3">
+                    <Ionicons 
+                      name="chevron-forward" 
+                      size={20} 
+                      color={colors.dentfyTextSecondary} 
+                    />
+                  </View>
+                </View>
+              </TouchableOpacity>
+              
+              {/* Separador âmbar entre cards (exceto no último) */}
+              {index < vitimas.length - 1 && (
+                <View className="h-0.5 bg-dentfyAmber/20 mx-4 mt-4 rounded-full" />
+              )}
             </View>
           ))}
         </View>

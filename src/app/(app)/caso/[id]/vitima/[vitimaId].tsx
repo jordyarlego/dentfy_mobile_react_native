@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, Text, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity, TextInput, Text, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Body } from '@/components/Typography';
+import { Ionicons } from '@expo/vector-icons';
+import HeaderPerito from '@/components/header';
+import { Body, Heading } from '@/components/Typography';
 import { colors } from '@/theme/colors';
-import type { Vitima } from '@/services/api_vitima'; // supondo que você tenha exportado lá
+import type { Vitima } from '@/services/api_vitima';
 import {
   buscarVitimaPorId,
   atualizarVitima,
@@ -12,11 +14,12 @@ import {
 type Sexo = 'Masculino' | 'Feminino' | 'Outro';
 type Etnia = 'Preto' | 'Pardo' | 'Branco' | 'Amarelo' | 'Indígena';
 
-export default function EditarVitima() {
-  const { vitimaId } = useLocalSearchParams();
+export default function DetalhesVitima() {
+  const { vitimaId, id: casoId } = useLocalSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState<Vitima | null>(null);
 
   useEffect(() => {
@@ -55,7 +58,6 @@ export default function EditarVitima() {
       'etnia',
       'endereco',
       'cpf',
-      'nic',
     ];
 
     const camposFaltantes = camposObrigatorios.filter(
@@ -77,10 +79,9 @@ export default function EditarVitima() {
         _id, criadoEm, odontograma, caso, ...dadosAtualizar
       } = formData;
 
-      await atualizarVitima(vitimaId, dadosAtualizar);
-      Alert.alert('Sucesso', 'Vítima atualizada com sucesso!', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      await atualizarVitima(vitimaId as string, dadosAtualizar);
+      setEditing(false);
+      Alert.alert('Sucesso', 'Vítima atualizada com sucesso!');
     } catch (error) {
       Alert.alert('Erro', 'Erro ao atualizar vítima');
     } finally {
@@ -88,156 +89,300 @@ export default function EditarVitima() {
     }
   };
 
+  const formatarCPF = (cpf: string) => {
+    if (!cpf) return '';
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  };
+
+  const formatarData = (data: string) => {
+    if (!data) return '';
+    try {
+      const date = new Date(data);
+      return date.toLocaleDateString('pt-BR');
+    } catch {
+      return data;
+    }
+  };
+
+  const getSexoIcon = (sexo: string) => {
+    switch (sexo) {
+      case 'Masculino':
+        return 'male';
+      case 'Feminino':
+        return 'female';
+      default:
+        return 'person';
+    }
+  };
+
   if (loading || !formData) {
     return (
-      <View className="flex-1 items-center justify-center bg-dentfyGray900">
-        <Body className="text-dentfyTextSecondary">Carregando...</Body>
+      <View className="flex-1 bg-dentfyGray900">
+        <HeaderPerito showBackButton />
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={colors.dentfyAmber} />
+          <Body className="text-dentfyTextSecondary mt-4">Carregando vítima...</Body>
+        </View>
       </View>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-dentfyGray900">
-      <View className="p-4">
+    <View className="flex-1 bg-dentfyGray900">
+      <HeaderPerito showBackButton />
+      
+      <ScrollView className="flex-1 p-4">
+        {/* Header da Vítima */}
         <View className="mb-6">
-          <Body className="text-2xl font-bold text-dentfyAmber mb-2">
-            Editar Vítima
-          </Body>
-          <Body className="text-base text-dentfyTextSecondary">
-            Atualize os dados da vítima abaixo.
-          </Body>
+          <View className="flex-row justify-between items-start mb-4">
+            <View className="flex-1">
+              <Heading size="large" className="text-dentfyAmber mb-2">
+                {editing ? 'Editar Vítima' : formData.nomeCompleto}
+              </Heading>
+              <Body className="text-dentfyTextSecondary">
+                {editing ? 'Atualize os dados da vítima abaixo.' : 'Detalhes da vítima'}
+              </Body>
+            </View>
+            
+            {!editing && (
+              <TouchableOpacity
+                onPress={() => setEditing(true)}
+                className="p-3 rounded-full bg-dentfyAmber/10"
+              >
+                <Ionicons name="pencil" size={20} color={colors.dentfyAmber} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
-        <View className="space-y-4">
-          <View>
-            <Body className="text-base text-dentfyTextSecondary mb-1">Nome Completo *</Body>
-            <TextInput
-              value={formData.nomeCompleto}
-              onChangeText={value => handleChange('nomeCompleto', value)}
-              className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
-              placeholder="Digite o nome completo"
-              placeholderTextColor="#6B7280"
-            />
-          </View>
+        {editing ? (
+          /* Formulário de Edição */
+          <View className="space-y-4">
+            <View>
+              <Body className="text-base text-dentfyTextSecondary mb-1">Nome Completo *</Body>
+              <TextInput
+                value={formData.nomeCompleto}
+                onChangeText={value => handleChange('nomeCompleto', value)}
+                className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
+                placeholder="Digite o nome completo"
+                placeholderTextColor="#6B7280"
+              />
+            </View>
 
-          <View>
-            <Body className="text-base text-dentfyTextSecondary mb-1">Data de nascimento *</Body>
-            <TextInput
-              value={formData.dataNascimento}
-              onChangeText={value => handleChange('dataNascimento', value)}
-              className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
-              placeholder="DD/MM/AAAA"
-              placeholderTextColor="#6B7280"
-              keyboardType="numeric"
-            />
-          </View>
+            <View>
+              <Body className="text-base text-dentfyTextSecondary mb-1">Data de nascimento *</Body>
+              <TextInput
+                value={formData.dataNascimento}
+                onChangeText={value => handleChange('dataNascimento', value)}
+                className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
+                placeholder="DD/MM/AAAA"
+                placeholderTextColor="#6B7280"
+                keyboardType="numeric"
+              />
+            </View>
 
-          <View>
-            <Body className="text-base text-dentfyTextSecondary mb-1">Sexo *</Body>
-            <View className="flex-row gap-4">
-              {['Masculino', 'Feminino', 'Outro'].map((sexo) => (
-                <TouchableOpacity
-                  key={sexo}
-                  onPress={() => handleChange('sexo', sexo as Sexo)}
-                  className={`flex-1 p-3 rounded-lg border ${
-                    formData.sexo === sexo
-                      ? 'bg-dentfyAmber border-amber-500'
-                      : 'bg-dentfyGray800 border-dentfyGray700'
-                  }`}
-                >
-                  <Body
-                    className={`text-center ${
-                      formData.sexo === sexo ? 'text-white' : 'text-dentfyTextSecondary'
+            <View>
+              <Body className="text-base text-dentfyTextSecondary mb-1">Sexo *</Body>
+              <View className="flex-row gap-4">
+                {['Masculino', 'Feminino', 'Outro'].map((sexo) => (
+                  <TouchableOpacity
+                    key={sexo}
+                    onPress={() => handleChange('sexo', sexo as Sexo)}
+                    className={`flex-1 p-3 rounded-lg border ${
+                      formData.sexo === sexo
+                        ? 'bg-dentfyAmber border-amber-500'
+                        : 'bg-dentfyGray800 border-dentfyGray700'
                     }`}
                   >
-                    {sexo}
-                  </Body>
-                </TouchableOpacity>
-              ))}
+                    <Body
+                      className={`text-center ${
+                        formData.sexo === sexo ? 'text-white' : 'text-dentfyTextSecondary'
+                      }`}
+                    >
+                      {sexo}
+                    </Body>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          </View>
 
-          <View>
-            <Body className="text-base text-dentfyTextSecondary mb-1">Etnia *</Body>
-            <View className="flex-row flex-wrap gap-2">
-              {['Preto', 'Pardo', 'Branco', 'Amarelo', 'Indígena'].map((etnia) => (
-                <TouchableOpacity
-                  key={etnia}
-                  onPress={() => handleChange('etnia', etnia as Etnia)}
-                  className={`px-4 py-2 rounded-lg border ${
-                    formData.etnia === etnia
-                      ? 'bg-dentfyAmber border-amber-500'
-                      : 'bg-dentfyGray800 border-dentfyGray700'
-                  }`}
-                >
-                  <Body
-                    className={`text-center ${
-                      formData.etnia === etnia ? 'text-white' : 'text-dentfyTextSecondary'
+            <View>
+              <Body className="text-base text-dentfyTextSecondary mb-1">Etnia *</Body>
+              <View className="flex-row flex-wrap gap-2">
+                {['Preto', 'Pardo', 'Branco', 'Amarelo', 'Indígena'].map((etnia) => (
+                  <TouchableOpacity
+                    key={etnia}
+                    onPress={() => handleChange('etnia', etnia as Etnia)}
+                    className={`px-4 py-2 rounded-lg border ${
+                      formData.etnia === etnia
+                        ? 'bg-dentfyAmber border-amber-500'
+                        : 'bg-dentfyGray800 border-dentfyGray700'
                     }`}
                   >
-                    {etnia}
-                  </Body>
-                </TouchableOpacity>
-              ))}
+                    <Body
+                      className={`text-center ${
+                        formData.etnia === etnia ? 'text-white' : 'text-dentfyTextSecondary'
+                      }`}
+                    >
+                      {etnia}
+                    </Body>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View>
+              <Body className="text-base text-dentfyTextSecondary mb-1">Endereço *</Body>
+              <TextInput
+                value={formData.endereco}
+                onChangeText={value => handleChange('endereco', value)}
+                className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
+                placeholder="Digite o endereço completo"
+                placeholderTextColor="#6B7280"
+                multiline
+                numberOfLines={2}
+              />
+            </View>
+
+            <View>
+              <Body className="text-base text-dentfyTextSecondary mb-1">CPF *</Body>
+              <TextInput
+                value={formData.cpf}
+                onChangeText={value => handleChange('cpf', value.replace(/\D/g, ''))}
+                className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
+                placeholder="Digite o CPF"
+                placeholderTextColor="#6B7280"
+                keyboardType="numeric"
+                maxLength={11}
+              />
+            </View>
+
+            <View className="flex-row gap-4 mt-6">
+              <TouchableOpacity
+                onPress={() => setEditing(false)}
+                className="flex-1 p-4 bg-dentfyGray800 rounded-lg border border-dentfyGray700"
+              >
+                <Body className="text-center text-dentfyTextSecondary">Cancelar</Body>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSubmit}
+                disabled={saving}
+                className="flex-1 p-4 bg-dentfyAmber rounded-lg"
+              >
+                <Body className="text-center text-white">
+                  {saving ? 'Salvando...' : 'Salvar'}
+                </Body>
+              </TouchableOpacity>
             </View>
           </View>
+        ) : (
+          /* Visualização dos Detalhes */
+          <View className="space-y-4">
+            {/* Informações Pessoais */}
+            <View className="bg-dentfyGray800/30 p-4 rounded-lg">
+              <View className="flex-row items-center mb-3">
+                <Ionicons name="person-circle" size={24} color={colors.dentfyAmber} />
+                <Heading size="medium" className="text-dentfyTextPrimary ml-2">
+                  Informações Pessoais
+                </Heading>
+              </View>
+              
+              <View className="space-y-3">
+                <View className="flex-row items-center">
+                  <Ionicons name="card-outline" size={20} color={colors.dentfyTextSecondary} />
+                  <Body className="text-dentfyTextSecondary ml-3 flex-1">CPF:</Body>
+                  <Body className="text-dentfyTextPrimary font-medium">
+                    {formatarCPF(formData.cpf)}
+                  </Body>
+                </View>
+                
+                <View className="flex-row items-center">
+                  <Ionicons name="calendar-outline" size={20} color={colors.dentfyTextSecondary} />
+                  <Body className="text-dentfyTextSecondary ml-3 flex-1">Data de Nascimento:</Body>
+                  <Body className="text-dentfyTextPrimary font-medium">
+                    {formatarData(formData.dataNascimento)}
+                  </Body>
+                </View>
+                
+                <View className="flex-row items-center">
+                  <Ionicons name={getSexoIcon(formData.sexo)} size={20} color={colors.dentfyTextSecondary} />
+                  <Body className="text-dentfyTextSecondary ml-3 flex-1">Sexo:</Body>
+                  <Body className="text-dentfyTextPrimary font-medium">
+                    {formData.sexo}
+                  </Body>
+                </View>
+                
+                <View className="flex-row items-center">
+                  <Ionicons name="people-outline" size={20} color={colors.dentfyTextSecondary} />
+                  <Body className="text-dentfyTextSecondary ml-3 flex-1">Etnia:</Body>
+                  <Body className="text-dentfyTextPrimary font-medium">
+                    {formData.etnia}
+                  </Body>
+                </View>
+              </View>
+            </View>
 
-          <View>
-            <Body className="text-base text-dentfyTextSecondary mb-1">Endereço *</Body>
-            <TextInput
-              value={formData.endereco}
-              onChangeText={value => handleChange('endereco', value)}
-              className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
-              placeholder="Digite o endereço completo"
-              placeholderTextColor="#6B7280"
-              multiline
-              numberOfLines={2}
-            />
+            {/* Endereço */}
+            {formData.endereco && (
+              <View className="bg-dentfyGray800/30 p-4 rounded-lg">
+                <View className="flex-row items-center mb-3">
+                  <Ionicons name="location" size={24} color={colors.dentfyAmber} />
+                  <Heading size="medium" className="text-dentfyTextPrimary ml-2">
+                    Endereço
+                  </Heading>
+                </View>
+                
+                <Body className="text-dentfyTextPrimary">
+                  {formData.endereco}
+                </Body>
+              </View>
+            )}
+
+            {/* Odontograma */}
+            {formData.odontograma && formData.odontograma.length > 0 && (
+              <View className="bg-dentfyGray800/30 p-4 rounded-lg">
+                <View className="flex-row items-center mb-3">
+                  <Ionicons name="medical" size={24} color={colors.dentfyAmber} />
+                  <Heading size="medium" className="text-dentfyTextPrimary ml-2">
+                    Odontograma
+                  </Heading>
+                </View>
+                
+                <View className="space-y-2">
+                  {formData.odontograma.map((dente, index) => (
+                    <View key={index} className="flex-row justify-between items-center bg-dentfyGray800/50 p-3 rounded">
+                      <Body className="text-dentfyTextSecondary">
+                        Dente {dente.numero}
+                      </Body>
+                      <Body className="text-dentfyTextPrimary">
+                        {dente.descricao}
+                      </Body>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Informações do Sistema */}
+            <View className="bg-dentfyGray800/30 p-4 rounded-lg">
+              <View className="flex-row items-center mb-3">
+                <Ionicons name="information-circle" size={24} color={colors.dentfyTextSecondary} />
+                <Heading size="medium" className="text-dentfyTextSecondary ml-2">
+                  Informações do Sistema
+                </Heading>
+              </View>
+              
+              <View className="flex-row items-center">
+                <Ionicons name="time-outline" size={20} color={colors.dentfyTextSecondary} />
+                <Body className="text-dentfyTextSecondary ml-3 flex-1">Criado em:</Body>
+                <Body className="text-dentfyTextPrimary font-medium">
+                  {formatarData(formData.criadoEm)}
+                </Body>
+              </View>
+            </View>
           </View>
-
-          <View>
-            <Body className="text-base text-dentfyTextSecondary mb-1">CPF *</Body>
-            <TextInput
-              value={formData.cpf}
-              onChangeText={value => handleChange('cpf', value.replace(/\D/g, ''))}
-              className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
-              placeholder="Digite o CPF"
-              placeholderTextColor="#6B7280"
-              keyboardType="numeric"
-              maxLength={11}
-            />
-          </View>
-
-          <View>
-            <Body className="text-base text-dentfyTextSecondary mb-1">NIC *</Body>
-            <TextInput
-              value={formData.nic}
-              onChangeText={value => handleChange('nic', value)}
-              className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
-              placeholder="Digite o NIC"
-              placeholderTextColor="#6B7280"
-            />
-          </View>
-        </View>
-
-        <View className="flex-row gap-4 mt-6">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="flex-1 p-4 bg-dentfyGray800 rounded-lg border border-dentfyGray700"
-          >
-            <Body className="text-center text-dentfyTextSecondary">Cancelar</Body>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={saving}
-            className="flex-1 p-4 bg-dentfyAmber rounded-lg"
-          >
-            <Body className="text-center text-white">
-              {saving ? 'Salvando...' : 'Salvar'}
-            </Body>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ScrollView>
+        )}
+      </ScrollView>
+    </View>
   );
 }
