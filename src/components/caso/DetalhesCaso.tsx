@@ -1,13 +1,48 @@
-import React from 'react';
-import { View, Text } from 'react-native';
-import type { Caso } from '../../types/caso';
-import { Heading, Body } from '../Typography';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { Caso } from '@/types/caso';
+import { Heading, Body } from '@/components/Typography';
+import { colors } from '@/theme/colors';
+
+const STORAGE_KEYS = {
+  CASOS: '@dentify_casos',
+} as const;
 
 interface DetalhesCasoProps {
-  caso: Caso;
+  casoId: string;
 }
 
-export default function DetalhesCaso({ caso }: DetalhesCasoProps) {
+export default function DetalhesCaso({ casoId }: DetalhesCasoProps) {
+  const [loading, setLoading] = useState(true);
+  const [caso, setCaso] = useState<Caso | null>(null);
+
+  useEffect(() => {
+    carregarCaso();
+  }, [casoId]);
+
+  const carregarCaso = async () => {
+    try {
+      setLoading(true);
+      const casosStr = await AsyncStorage.getItem(STORAGE_KEYS.CASOS);
+      
+      if (!casosStr) {
+        setCaso(null);
+        return;
+      }
+
+      const casos = JSON.parse(casosStr);
+      const casoEncontrado = casos.find((c: Caso) => String(c._id) === String(casoId));
+      
+      setCaso(casoEncontrado || null);
+    } catch (error) {
+      console.error('Erro ao carregar caso:', error);
+      setCaso(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatusStyle = (status: Caso['status']) => {
     switch (status) {
       case 'concluido':
@@ -33,6 +68,27 @@ export default function DetalhesCaso({ caso }: DetalhesCasoProps) {
         return status;
     }
   };
+
+  if (loading) {
+    return (
+      <View className="mb-6 items-center justify-center py-8">
+        <ActivityIndicator size="large" color={colors.dentfyAmber} />
+        <Body className="text-dentfyTextPrimary mt-4">
+          Carregando detalhes do caso...
+        </Body>
+      </View>
+    );
+  }
+
+  if (!caso) {
+    return (
+      <View className="mb-6 items-center justify-center py-8">
+        <Body className="text-dentfyTextPrimary text-center">
+          Caso não encontrado
+        </Body>
+      </View>
+    );
+  }
 
   return (
     <View className="mb-6">

@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, Text, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Evidencia } from '../../../../../types/caso';
-
-const STORAGE_KEYS = {
-  CASOS: '@dentify_casos',
-};
+import { Body } from '@/components/Typography';
+import { colors } from '@/theme/colors';
+import type { Evidencia, Caso, TipoEvidencia } from '@/types/caso';
+import { STORAGE_KEYS } from '@/types/caso';
 
 export default function EditarEvidencia() {
   const { id, evidenciaId } = useLocalSearchParams();
@@ -27,33 +26,28 @@ export default function EditarEvidencia() {
         throw new Error('Caso não encontrado');
       }
 
-      const casos = JSON.parse(casosStr);
-      const caso = casos.find((c: any) => c._id === id);
+      const casos = JSON.parse(casosStr) as Caso[];
+      const caso = casos.find((c) => String(c._id) === String(id));
       if (!caso) {
         throw new Error('Caso não encontrado');
       }
 
-      const evidencia = caso.evidencias.find((e: Evidencia) => e._id === evidenciaId);
+      const evidencia = caso.evidencias.find((e) => String(e._id) === String(evidenciaId));
       if (!evidencia) {
         throw new Error('Evidência não encontrada');
       }
 
       setFormData(evidencia);
     } catch (error) {
-      Alert.alert('Erro', 'Erro ao carregar evidência', [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]);
+      Alert.alert('Erro', 'Erro ao carregar evidência');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (field: keyof Evidencia, value: string) => {
+  const handleChange = (field: keyof Evidencia, value: string | TipoEvidencia) => {
     if (!formData) return;
-    setFormData((prev: Evidencia | null) => prev ? { ...prev, [field]: value } : null);
+    setFormData((prev) => prev ? { ...prev, [field]: value } : null);
   };
 
   const handleSubmit = async () => {
@@ -63,7 +57,7 @@ export default function EditarEvidencia() {
       setSaving(true);
 
       // Validar campos obrigatórios
-      const camposObrigatorios: (keyof Omit<Evidencia, '_id'>)[] = [
+      const camposObrigatorios: (keyof Omit<Evidencia, '_id' | 'createdAt' | 'imagemUri' | 'latitude' | 'longitude'>)[] = [
         'titulo',
         'descricao',
         'tipo',
@@ -90,15 +84,15 @@ export default function EditarEvidencia() {
         throw new Error('Caso não encontrado');
       }
 
-      const casos = JSON.parse(casosStr);
-      const casoIndex = casos.findIndex((c: any) => c._id === id);
+      const casos = JSON.parse(casosStr) as Caso[];
+      const casoIndex = casos.findIndex((c) => String(c._id) === String(id));
       if (casoIndex === -1) {
         throw new Error('Caso não encontrado');
       }
 
       // Atualizar evidência
       const evidenciaIndex = casos[casoIndex].evidencias.findIndex(
-        (e: Evidencia) => e._id === evidenciaId
+        (e) => String(e._id) === String(evidenciaId)
       );
       if (evidenciaIndex === -1) {
         throw new Error('Evidência não encontrada');
@@ -120,144 +114,147 @@ export default function EditarEvidencia() {
     }
   };
 
-  if (loading || !formData) {
-    return (
-      <View className="flex-1 items-center justify-center bg-gray-900">
-        <Text style={{ color: '#9CA3AF' }}>Carregando...</Text>
-      </View>
-    );
-  }
-
   return (
-    <ScrollView className="flex-1 bg-gray-900">
-      <View className="p-4">
-        <View className="mb-6">
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#F59E0B', marginBottom: 8 }}>
-            Editar Evidência
-          </Text>
-          <Text style={{ fontSize: 16, color: '#D1D5DB' }}>
-            Atualize os dados da evidência abaixo.
-          </Text>
+    <View className="flex-1 bg-dentfyGray900">
+      <HeaderPerito showBackButton />
+
+      {loading || !formData ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={colors.dentfyAmber} />
+          <Body className="text-dentfyTextSecondary mt-4">Carregando...</Body>
         </View>
-
-        <View className="space-y-4">
-          <View>
-            <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Título *</Text>
-            <TextInput
-              value={formData.titulo}
-              onChangeText={(value) => handleChange('titulo', value)}
-              className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
-              placeholder="Digite o título"
-              placeholderTextColor="#6B7280"
-            />
+      ) : (
+        <ScrollView className="flex-1 p-4">
+          <View className="mb-6">
+            <Body className="text-2xl font-bold text-dentfyAmber mb-2">
+              Editar Evidência
+            </Body>
+            <Body className="text-base text-dentfyTextSecondary">
+              Atualize os dados da evidência abaixo.
+            </Body>
           </View>
 
-          <View>
-            <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Descrição *</Text>
-            <TextInput
-              value={formData.descricao}
-              onChangeText={(value) => handleChange('descricao', value)}
-              className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
-              placeholder="Digite a descrição"
-              placeholderTextColor="#6B7280"
-              multiline
-              numberOfLines={4}
-            />
-          </View>
+          <View className="space-y-4">
+            <View>
+              <Body className="text-base text-dentfyTextSecondary mb-1">Título *</Body>
+              <TextInput
+                value={formData.titulo}
+                onChangeText={(value) => handleChange('titulo', value)}
+                className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
+                placeholder="Digite o título"
+                placeholderTextColor="#6B7280"
+              />
+            </View>
 
-          <View>
-            <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Tipo *</Text>
-            <View className="flex-row gap-4">
-              <TouchableOpacity
-                onPress={() => handleChange('tipo', 'imagem')}
-                className={`flex-1 p-3 rounded-lg border ${
-                  formData.tipo === 'imagem'
-                    ? 'bg-amber-600 border-amber-500'
-                    : 'bg-gray-800 border-gray-700'
-                }`}
-              >
-                <Text
-                  style={{
-                    textAlign: 'center',
-                    color: formData.tipo === 'imagem' ? '#FFFFFF' : '#D1D5DB',
-                  }}
+            <View>
+              <Body className="text-base text-dentfyTextSecondary mb-1">Descrição *</Body>
+              <TextInput
+                value={formData.descricao}
+                onChangeText={(value) => handleChange('descricao', value)}
+                className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
+                placeholder="Digite a descrição"
+                placeholderTextColor="#6B7280"
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+
+            <View>
+              <Body className="text-base text-dentfyTextSecondary mb-1">Tipo *</Body>
+              <View className="flex-row gap-4">
+                <TouchableOpacity
+                  onPress={() => handleChange('tipo', 'imagem')}
+                  className={`flex-1 p-3 rounded-lg border ${
+                    formData.tipo === 'imagem'
+                      ? 'bg-dentfyAmber border-amber-500'
+                      : 'bg-dentfyGray800 border-dentfyGray700'
+                  }`}
                 >
-                  Imagem
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => handleChange('tipo', 'documento')}
-                className={`flex-1 p-3 rounded-lg border ${
-                  formData.tipo === 'documento'
-                    ? 'bg-amber-600 border-amber-500'
-                    : 'bg-gray-800 border-gray-700'
-                }`}
-              >
-                <Text
-                  style={{
-                    textAlign: 'center',
-                    color: formData.tipo === 'documento' ? '#FFFFFF' : '#D1D5DB',
-                  }}
+                  <Body
+                    className={`text-center ${
+                      formData.tipo === 'imagem'
+                        ? 'text-white'
+                        : 'text-dentfyTextSecondary'
+                    }`}
+                  >
+                    Imagem
+                  </Body>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleChange('tipo', 'documento')}
+                  className={`flex-1 p-3 rounded-lg border ${
+                    formData.tipo === 'documento'
+                      ? 'bg-dentfyAmber border-amber-500'
+                      : 'bg-dentfyGray800 border-dentfyGray700'
+                  }`}
                 >
-                  Documento
-                </Text>
-              </TouchableOpacity>
+                  <Body
+                    className={`text-center ${
+                      formData.tipo === 'documento'
+                        ? 'text-white'
+                        : 'text-dentfyTextSecondary'
+                    }`}
+                  >
+                    Documento
+                  </Body>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View>
+              <Body className="text-base text-dentfyTextSecondary mb-1">Coletada por *</Body>
+              <TextInput
+                value={formData.coletadaPor}
+                onChangeText={(value) => handleChange('coletadaPor', value)}
+                className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
+                placeholder="Digite o nome do coletor"
+                placeholderTextColor="#6B7280"
+              />
+            </View>
+
+            <View>
+              <Body className="text-base text-dentfyTextSecondary mb-1">Data de coleta *</Body>
+              <TextInput
+                value={formData.dataColeta}
+                onChangeText={(value) => handleChange('dataColeta', value)}
+                className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
+                placeholder="DD/MM/AAAA"
+                placeholderTextColor="#6B7280"
+                keyboardType="numeric"
+              />
+            </View>
+
+            <View>
+              <Body className="text-base text-dentfyTextSecondary mb-1">Local *</Body>
+              <TextInput
+                value={formData.local}
+                onChangeText={(value) => handleChange('local', value)}
+                className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
+                placeholder="Digite o local"
+                placeholderTextColor="#6B7280"
+              />
             </View>
           </View>
 
-          <View>
-            <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Coletada por *</Text>
-            <TextInput
-              value={formData.coletadaPor}
-              onChangeText={(value) => handleChange('coletadaPor', value)}
-              className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
-              placeholder="Digite o nome do coletor"
-              placeholderTextColor="#6B7280"
-            />
+          <View className="flex-row gap-4 mt-6">
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="flex-1 p-4 bg-dentfyGray800 rounded-lg border border-dentfyGray700"
+            >
+              <Body className="text-center text-dentfyTextSecondary">Cancelar</Body>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSubmit}
+              disabled={saving}
+              className="flex-1 p-4 bg-dentfyAmber rounded-lg"
+            >
+              <Body className="text-center text-white">
+                {saving ? 'Salvando...' : 'Salvar'}
+              </Body>
+            </TouchableOpacity>
           </View>
-
-          <View>
-            <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Data de coleta *</Text>
-            <TextInput
-              value={formData.dataColeta}
-              onChangeText={(value) => handleChange('dataColeta', value)}
-              className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
-              placeholder="DD/MM/AAAA"
-              placeholderTextColor="#6B7280"
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View>
-            <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Local *</Text>
-            <TextInput
-              value={formData.local}
-              onChangeText={(value) => handleChange('local', value)}
-              className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
-              placeholder="Digite o local"
-              placeholderTextColor="#6B7280"
-            />
-          </View>
-        </View>
-
-        <View className="flex-row gap-4 mt-6">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="flex-1 p-4 bg-gray-800 rounded-lg border border-gray-700"
-          >
-            <Text style={{ textAlign: 'center', color: '#D1D5DB' }}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={saving}
-            className="flex-1 p-4 bg-amber-600 rounded-lg"
-          >
-            <Text style={{ textAlign: 'center', color: '#FFFFFF' }}>
-              {saving ? 'Salvando...' : 'Salvar'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ScrollView>
+        </ScrollView>
+      )}
+    </View>
   );
 } 

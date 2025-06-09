@@ -4,15 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { View, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import HeaderPerito from '../../../components/header';
-import DetalhesCaso from '../../../components/caso/DetalhesCaso';
-import ListaVitimas from '../../../components/caso/ListaVitimas';
-import ListaEvidencias from '../../../components/caso/ListaEvidencias';
-import { useToast } from '../../../contexts/ToastContext';
-import type { Caso } from '../../../types/caso';
-import { Heading, Body } from '../../../components/Typography';
-import { colors } from '../../../theme/colors';
-import { buscarCasoCompleto } from '../../../services/caso';
+import HeaderPerito from '@/components/header';
+import DetalhesCaso from '@/components/caso/DetalhesCaso';
+import ListaVitimas from '@/components/caso/ListaVitimas';
+import ListaEvidencias from '@/components/caso/ListaEvidencias';
+import { useToast } from '@/contexts/ToastContext';
+import type { Caso } from '@/types/caso';
+import { Heading, Body } from '@/components/Typography';
+import { colors } from '@/theme/colors';
+import { buscarCasoCompleto } from '@/services/caso';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function DetalhesCasoPage() {
@@ -110,9 +110,25 @@ export default function DetalhesCasoPage() {
       <HeaderPerito showBackButton />
 
       <ScrollView className="flex-1 p-4">
-        <DetalhesCaso caso={caso} />
-        <ListaVitimas casoId={caso._id} />
-        <ListaEvidencias casoId={caso._id} />
+        <DetalhesCaso casoId={caso._id} />
+
+        <View className="flex-row justify-end mt-4">
+          <TouchableOpacity
+            onPress={() => router.push(`/caso/${id}/localizacoes`)}
+            className="flex-row items-center bg-amber-600 px-4 py-2 rounded-lg"
+          >
+            <Ionicons name="map-outline" size={20} color="white" />
+            <Body className="text-white ml-2">Localizações</Body>
+          </TouchableOpacity>
+        </View>
+
+        <View className="mt-6">
+          <ListaVitimas casoId={caso._id} />
+        </View>
+
+        <View className="mt-6 mb-6">
+          <ListaEvidencias casoId={caso._id} />
+        </View>
       </ScrollView>
     </View>
   );

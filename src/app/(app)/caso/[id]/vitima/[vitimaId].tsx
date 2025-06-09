@@ -3,17 +3,20 @@ import { View, ScrollView, TouchableOpacity, TextInput, Text, Alert } from 'reac
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Body } from '@/components/Typography';
+import { colors } from '@/theme/colors';
+import type { Vitima, Caso } from '@/types/caso';
+import { STORAGE_KEYS } from '@/types/caso';
 
-const STORAGE_KEYS = {
-  CASOS: 'casos',
-};
+type Sexo = 'masculino' | 'feminino' | 'outro';
+type Etnia = 'branca' | 'preta' | 'parda' | 'amarela' | 'indigena' | 'outro';
 
 export default function EditarVitima() {
   const { id, vitimaId } = useLocalSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<any | null>(null);
+  const [formData, setFormData] = useState<Vitima | null>(null);
 
   useEffect(() => {
     carregarVitima();
@@ -26,13 +29,13 @@ export default function EditarVitima() {
         throw new Error('Caso não encontrado');
       }
 
-      const casos = JSON.parse(casosStr);
-      const caso = casos.find((c: any) => c._id === id);
+      const casos = JSON.parse(casosStr) as Caso[];
+      const caso = casos.find((c) => String(c._id) === String(id));
       if (!caso) {
         throw new Error('Caso não encontrado');
       }
 
-      const vitima = caso.vitimas.find((v: any) => v._id === vitimaId);
+      const vitima = caso.vitimas.find((v) => String(v._id) === String(vitimaId));
       if (!vitima) {
         throw new Error('Vítima não encontrada');
       }
@@ -50,9 +53,9 @@ export default function EditarVitima() {
     }
   };
 
-  const handleChange = (field: keyof any, value: string) => {
+  const handleChange = (field: keyof Vitima, value: string) => {
     if (!formData) return;
-    setFormData((prev: any | null) => prev ? { ...prev, [field]: value } : null);
+    setFormData((prev) => prev ? { ...prev, [field]: value } : null);
   };
 
   const handleSubmit = async () => {
@@ -62,7 +65,7 @@ export default function EditarVitima() {
       setSaving(true);
 
       // Validar campos obrigatórios
-      const camposObrigatorios: (keyof Omit<any, '_id'>)[] = [
+      const camposObrigatorios: (keyof Omit<Vitima, '_id'>)[] = [
         'nome',
         'dataNascimento',
         'sexo',
@@ -90,15 +93,15 @@ export default function EditarVitima() {
         throw new Error('Caso não encontrado');
       }
 
-      const casos = JSON.parse(casosStr);
-      const casoIndex = casos.findIndex((c: any) => c._id === id);
+      const casos = JSON.parse(casosStr) as Caso[];
+      const casoIndex = casos.findIndex((c) => String(c._id) === String(id));
       if (casoIndex === -1) {
         throw new Error('Caso não encontrado');
       }
 
       // Atualizar vítima
       const vitimaIndex = casos[casoIndex].vitimas.findIndex(
-        (v: any) => v._id === vitimaId
+        (v) => String(v._id) === String(vitimaId)
       );
       if (vitimaIndex === -1) {
         throw new Error('Vítima não encontrada');
@@ -122,42 +125,42 @@ export default function EditarVitima() {
 
   if (loading || !formData) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-900">
-        <Text className="text-gray-400">Carregando...</Text>
+      <View className="flex-1 items-center justify-center bg-dentfyGray900">
+        <Body className="text-dentfyTextSecondary">Carregando...</Body>
       </View>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-gray-900">
+    <ScrollView className="flex-1 bg-dentfyGray900">
       <View className="p-4">
         <View className="mb-6">
-          <Text className="text-amber-500 mb-2 text-2xl font-bold">
+          <Body className="text-2xl font-bold text-dentfyAmber mb-2">
             Editar Vítima
-          </Text>
-          <Text className="text-gray-300">
+          </Body>
+          <Body className="text-base text-dentfyTextSecondary">
             Atualize os dados da vítima abaixo.
-          </Text>
+          </Body>
         </View>
 
         <View className="space-y-4">
           <View>
-            <Text className="text-gray-300 mb-1">Nome completo *</Text>
+            <Body className="text-base text-dentfyTextSecondary mb-1">Nome *</Body>
             <TextInput
               value={formData.nome}
               onChangeText={(value) => handleChange('nome', value)}
-              className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
+              className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
               placeholder="Digite o nome completo"
               placeholderTextColor="#6B7280"
             />
           </View>
 
           <View>
-            <Text className="text-gray-300 mb-1">Data de nascimento *</Text>
+            <Body className="text-base text-dentfyTextSecondary mb-1">Data de nascimento *</Body>
             <TextInput
               value={formData.dataNascimento}
               onChangeText={(value) => handleChange('dataNascimento', value)}
-              className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
+              className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
               placeholder="DD/MM/AAAA"
               placeholderTextColor="#6B7280"
               keyboardType="numeric"
@@ -165,64 +168,64 @@ export default function EditarVitima() {
           </View>
 
           <View>
-            <Text className="text-gray-300 mb-1">Sexo *</Text>
+            <Body className="text-base text-dentfyTextSecondary mb-1">Sexo *</Body>
             <View className="flex-row gap-4">
               <TouchableOpacity
                 onPress={() => handleChange('sexo', 'masculino')}
                 className={`flex-1 p-3 rounded-lg border ${
                   formData.sexo === 'masculino'
-                    ? 'bg-amber-600 border-amber-500'
-                    : 'bg-gray-800 border-gray-700'
+                    ? 'bg-dentfyAmber border-amber-500'
+                    : 'bg-dentfyGray800 border-dentfyGray700'
                 }`}
               >
-                <Text
+                <Body
                   className={`text-center ${
                     formData.sexo === 'masculino'
                       ? 'text-white'
-                      : 'text-gray-300'
+                      : 'text-dentfyTextSecondary'
                   }`}
                 >
                   Masculino
-                </Text>
+                </Body>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleChange('sexo', 'feminino')}
                 className={`flex-1 p-3 rounded-lg border ${
                   formData.sexo === 'feminino'
-                    ? 'bg-amber-600 border-amber-500'
-                    : 'bg-gray-800 border-gray-700'
+                    ? 'bg-dentfyAmber border-amber-500'
+                    : 'bg-dentfyGray800 border-dentfyGray700'
                 }`}
               >
-                <Text
+                <Body
                   className={`text-center ${
                     formData.sexo === 'feminino'
                       ? 'text-white'
-                      : 'text-gray-300'
+                      : 'text-dentfyTextSecondary'
                   }`}
                 >
                   Feminino
-                </Text>
+                </Body>
               </TouchableOpacity>
             </View>
           </View>
 
           <View>
-            <Text className="text-gray-300 mb-1">Etnia *</Text>
+            <Body className="text-base text-dentfyTextSecondary mb-1">Etnia *</Body>
             <TextInput
               value={formData.etnia}
-              onChangeText={(value) => handleChange('etnia', value)}
-              className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
+              onChangeText={(value) => handleChange('etnia', value as Etnia)}
+              className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
               placeholder="Digite a etnia"
               placeholderTextColor="#6B7280"
             />
           </View>
 
           <View>
-            <Text className="text-gray-300 mb-1">Endereço *</Text>
+            <Body className="text-base text-dentfyTextSecondary mb-1">Endereço *</Body>
             <TextInput
               value={formData.endereco}
               onChangeText={(value) => handleChange('endereco', value)}
-              className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
+              className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
               placeholder="Digite o endereço completo"
               placeholderTextColor="#6B7280"
               multiline
@@ -231,23 +234,24 @@ export default function EditarVitima() {
           </View>
 
           <View>
-            <Text className="text-gray-300 mb-1">CPF *</Text>
+            <Body className="text-base text-dentfyTextSecondary mb-1">CPF *</Body>
             <TextInput
               value={formData.cpf}
-              onChangeText={(value) => handleChange('cpf', value)}
-              className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
+              onChangeText={(value) => handleChange('cpf', value.replace(/\D/g, ''))}
+              className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
               placeholder="Digite o CPF"
               placeholderTextColor="#6B7280"
               keyboardType="numeric"
+              maxLength={11}
             />
           </View>
 
           <View>
-            <Text className="text-gray-300 mb-1">NIC *</Text>
+            <Body className="text-base text-dentfyTextSecondary mb-1">NIC *</Body>
             <TextInput
               value={formData.nic}
               onChangeText={(value) => handleChange('nic', value)}
-              className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
+              className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
               placeholder="Digite o NIC"
               placeholderTextColor="#6B7280"
             />
@@ -257,18 +261,18 @@ export default function EditarVitima() {
         <View className="flex-row gap-4 mt-6">
           <TouchableOpacity
             onPress={() => router.back()}
-            className="flex-1 p-4 bg-gray-800 rounded-lg border border-gray-700"
+            className="flex-1 p-4 bg-dentfyGray800 rounded-lg border border-dentfyGray700"
           >
-            <Text className="text-center text-gray-300">Cancelar</Text>
+            <Body className="text-center text-dentfyTextSecondary">Cancelar</Body>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={saving}
-            className="flex-1 p-4 bg-amber-600 rounded-lg"
+            className="flex-1 p-4 bg-dentfyAmber rounded-lg"
           >
-            <Text className="text-center text-white">
+            <Body className="text-center text-white">
               {saving ? 'Salvando...' : 'Salvar'}
-            </Text>
+            </Body>
           </TouchableOpacity>
         </View>
       </View>
