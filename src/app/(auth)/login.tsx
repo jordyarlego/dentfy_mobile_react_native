@@ -1,16 +1,68 @@
-import { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
+import { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Keyboard, NativeSyntheticEvent, TextInputChangeEventData } from "react-native";
+import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import InputTeste from "../../components/InputComponent";
+import { useAuth } from "../../hooks/useAuth";
+import api from "../../services/api";
+import { colors } from "../../theme/colors";
+import { Ionicons } from "@expo/vector-icons";
+import { useToast } from '../../contexts/ToastContext';
 
 export default function Login() {
-  const router = useRouter();
+  const { signIn } = useAuth();
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
   const [cpfError, setCpfError] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isCapsLockOn, setIsCapsLockOn] = useState(false);
+  const { showToast } = useToast();
+
+  const checkCapsLock = (text: string) => {
+    if (text.length === 0) {
+      setIsCapsLockOn(false);
+      return;
+    }
+
+    // Verifica se o último caractere é uma letra
+    const lastChar = text[text.length - 1];
+    if (!/[a-zA-Z]/.test(lastChar)) {
+      return;
+    }
+
+    // Verifica se o caractere está em maiúsculo
+    const isUpperCase = lastChar === lastChar.toUpperCase() && lastChar !== lastChar.toLowerCase();
+    
+    // Se o caractere anterior existir e for minúsculo, mas o atual for maiúsculo,
+    // provavelmente o caps lock foi ativado
+    if (text.length > 1) {
+      const prevChar = text[text.length - 2];
+      if (/[a-zA-Z]/.test(prevChar) && prevChar === prevChar.toLowerCase() && isUpperCase) {
+        setIsCapsLockOn(true);
+        return;
+      }
+    }
+
+    // Se o caractere anterior existir e for maiúsculo, mas o atual for minúsculo,
+    // provavelmente o caps lock foi desativado
+    if (text.length > 1) {
+      const prevChar = text[text.length - 2];
+      if (/[a-zA-Z]/.test(prevChar) && prevChar === prevChar.toUpperCase() && !isUpperCase) {
+        setIsCapsLockOn(false);
+        return;
+      }
+    }
+
+    // Se não houver mudança de estado, mantém o estado atual
+    setIsCapsLockOn(isUpperCase);
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    checkCapsLock(text);
+  };
 
   const validateCpf = (cpf: string) => {
     const cleanedCpf = cpf.replace(/[^\d]+/g, "");
@@ -20,52 +72,112 @@ export default function Login() {
     return "";
   };
 
-  const handleSubmit = async () => {
+  const handleLogin = async () => {
+    if (!cpf || !password) {
+      showToast('Por favor, preencha todos os campos', 'error');
+      return;
+    }
+
     setError("");
     setCpfError("");
     setLoading(true);
 
-    const cpfValidationError = validateCpf(cpf);
+    const cleanedCpf = cpf.replace(/[^\d]+/g, "");
+    const cpfValidationError = validateCpf(cleanedCpf);
     if (cpfValidationError) {
       setCpfError(cpfValidationError);
       setLoading(false);
       return;
     }
 
-    
     try {
-     
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('=== INÍCIO DO LOGIN ===');
+      console.log('Tentando fazer login com CPF:', cleanedCpf);
       
+      const response = await api.post("/api/users/login", {
+        cpf: cleanedCpf,
+        password,
+      });
+
+      console.log('Resposta do login:', {
+        status: response.status,
+        data: response.data,
+        headers: response.headers
+      });
+
+      if (response.status === 200 && response.data.token) {
+        console.log('Login bem sucedido, token recebido');
+        const token = response.data.token;
+        const userData = response.data.user;
+        
+        // Primeiro salva os dados do usuário
+        await AsyncStorage.setItem("@dentfy:usuario", JSON.stringify({
+          nome: userData.name,
+          cargo:
+            userData.role === "admin"
+              ? "Administrador"
+              : userData.role === "perito"
+                ? "Perito Criminal"
+                : "Assistente",
+        }));
+        
+        // Depois faz o login usando o contexto
+        await signIn(token);
+        
+        console.log('Login concluído com sucesso');
+        showToast('Login realizado com sucesso!', 'success');
+      } else {
+        console.error('Resposta inválida do servidor:', response.data);
+        showToast('Erro ao fazer login. Tente novamente.', 'error');
+      }
+    } catch (error: any) {
+      console.error('Erro durante o login:', error);
       
-      router.push("/CasosPerito");
-    } catch (err) {
-      setError("Erro ao fazer login. Tente novamente.");
+      // Tratamento específico de erros
+      if (error.response) {
+        // Erro com resposta do servidor
+        const status = error.response.status;
+        const message = error.response.data?.message || 'Erro ao fazer login';
+        
+        if (status === 401) {
+          showToast('Email ou senha incorretos', 'error');
+        } else if (status === 404) {
+          showToast('Usuário não encontrado', 'error');
+        } else {
+          showToast(message, 'error');
+        }
+      } else if (error.request) {
+        // Erro de rede
+        showToast('Erro de conexão. Verifique sua internet.', 'error');
+      } else {
+        // Outros erros
+        showToast('Ocorreu um erro inesperado', 'error');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ScrollView className="flex-1 bg-[#12212B]">
+    <ScrollView className="flex-1 bg-dentfyLightBlue">
       <View className="flex-1 p-4 justify-center min-h-screen">
-        <View className="bg-[#12212B] p-6 rounded-2xl w-full">
+        <View className="bg-dentfyLightBlue p-6 rounded-2xl w-full">
           <View className="items-center mb-6">
-            <Text className="text-white font-bold text-4xl mb-2">
-              Dent<Text className="text-amber-500">ify</Text>
+            <Text className="text-dentfyTextPrimary font-bold text-4xl mb-2">
+              Dent<Text className="text-dentfyAmber">ify</Text>
             </Text>
-            <Text className="text-cyan-100 text-center mb-4 text-sm max-w-md">
+            <Text className="text-dentfyCyanLight text-center mb-4 text-sm max-w-md">
               Bem-vindo à plataforma de registros periciais odonto-legais!
               Gerencie e consulte casos de forma segura e prática.
             </Text>
-            <View className="h-1 w-16 bg-cyan-400 rounded-full mb-4" />
-            <Text className="text-2xl font-bold text-center text-white">
+            <View className="h-1 w-16 bg-dentfyCyan rounded-full mb-4" />
+            <Text className="text-2xl font-bold text-center text-dentfyTextPrimary">
               Login
             </Text>
           </View>
 
           {error && (
-            <Text className="text-red-500 text-center mb-4">{error}</Text>
+            <Text className="text-errorRed text-center mb-4">{error}</Text>
           )}
 
           <View className="space-y-4">
@@ -81,22 +193,30 @@ export default function Login() {
             <InputTeste
               label="Senha"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={handlePasswordChange}
               placeholder="Digite sua senha"
-              secureTextEntry
+              secureTextEntry={!showPassword}
+              showPasswordToggle
+              isPasswordVisible={showPassword}
+              onTogglePassword={() => setShowPassword(!showPassword)}
+              autoCapitalize="none"
+              autoCorrect={false}
             />
+            {isCapsLockOn && (
+              <Text className="text-amber-500 text-xs mt-1">
+                Caps Lock está ativado
+              </Text>
+            )}
 
             <TouchableOpacity
-              onPress={handleSubmit}
+              onPress={handleLogin}
               disabled={loading}
-              className={`w-[200px] h-[50px] bg-[#01777B] rounded-xl mx-auto items-center justify-center ${
-                loading ? "opacity-50" : ""
-              }`}
+              className={`w-[200px] h-[50px] bg-dentfyCyan rounded-xl mx-auto items-center justify-center ${loading ? "opacity-50" : ""}`}
             >
               {loading ? (
-                <ActivityIndicator color="white" />
+                <ActivityIndicator color={colors.dentfyTextPrimary} />
               ) : (
-                <Text className="text-white font-semibold">Entrar</Text>
+                <Text className="text-dentfyTextPrimary font-semibold">Entrar</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -104,4 +224,4 @@ export default function Login() {
       </View>
     </ScrollView>
   );
-} 
+}
