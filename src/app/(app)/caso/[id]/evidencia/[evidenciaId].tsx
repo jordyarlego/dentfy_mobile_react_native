@@ -146,7 +146,7 @@ export default function DetalhesEvidencia() {
         <View className="mb-6">
           <View className="flex-row justify-between items-start mb-4">
             <View className="flex-1">
-              <Heading size="large" className="text-dentfyAmber mb-2">
+              <Heading size="large" className="text-dentfyAmber mb-2 text-2xl font-bold">
                 {editing ? 'Editar Evidência' : formData.titulo}
               </Heading>
               <Body className="text-dentfyTextSecondary">
@@ -312,7 +312,7 @@ export default function DetalhesEvidencia() {
               <View className="space-y-3">
                 <View className="flex-row items-center">
                   <Ionicons name={getTipoIcon(formData.tipo)} size={20} color={colors.dentfyTextSecondary} />
-                  <Body className="text-dentfyTextSecondary ml-3 flex-1">Tipo:</Body>
+                  <Body className="text-dentfyAmber ml-3 mr-2 font-semibold">Tipo:</Body>
                   <Body className="text-dentfyTextPrimary font-medium">
                     {formData.tipo === 'imagem' ? 'Imagem' : 'Documento'}
                   </Body>
@@ -320,7 +320,7 @@ export default function DetalhesEvidencia() {
                 
                 <View className="flex-row items-center">
                   <Ionicons name="person-outline" size={20} color={colors.dentfyTextSecondary} />
-                  <Body className="text-dentfyTextSecondary ml-3 flex-1">Coletado por:</Body>
+                  <Body className="text-dentfyAmber ml-3 mr-2 font-semibold">Coletado por:</Body>
                   <Body className="text-dentfyTextPrimary font-medium">
                     {formData.coletadoPor || 'Não informado'}
                   </Body>
@@ -328,7 +328,7 @@ export default function DetalhesEvidencia() {
                 
                 <View className="flex-row items-center">
                   <Ionicons name="calendar-outline" size={20} color={colors.dentfyTextSecondary} />
-                  <Body className="text-dentfyTextSecondary ml-3 flex-1">Data de Coleta:</Body>
+                  <Body className="text-dentfyAmber ml-3 mr-2 font-semibold">Data de Coleta:</Body>
                   <Body className="text-dentfyTextPrimary font-medium">
                     {formatarData(formData.dataColeta)}
                   </Body>
@@ -336,25 +336,35 @@ export default function DetalhesEvidencia() {
                 
                 <View className="flex-row items-center">
                   <Ionicons name="location" size={20} color={colors.dentfyTextSecondary} />
-                  <Body className="text-dentfyTextSecondary ml-3 flex-1">Local:</Body>
+                  <Body className="text-dentfyAmber ml-3 mr-2 font-semibold">Local:</Body>
                   <Body className="text-dentfyTextPrimary font-medium">
-                    {formData.localColeta}
+                    {formData.localColeta || 'Não informado'}
                   </Body>
                 </View>
+
+                {formData.periciado && (
+                  <View className="flex-row items-center">
+                    <Ionicons name="person-circle-outline" size={20} color={colors.dentfyTextSecondary} />
+                    <Body className="text-dentfyTextSecondary ml-3 mr-2">Periciado:</Body>
+                    <Body className="text-dentfyTextPrimary font-medium">
+                      {formData.periciado}
+                    </Body>
+                  </View>
+                )}
               </View>
             </View>
 
             {/* Descrição */}
             <View className="bg-dentfyGray800/30 p-4 rounded-lg">
               <View className="flex-row items-center mb-3">
-                <Ionicons name="text" size={24} color={colors.dentfyAmber} />
+                <Ionicons name="chatbubble-ellipses" size={24} color={colors.dentfyAmber} />
                 <Heading size="medium" className="text-dentfyTextPrimary ml-2">
                   Descrição
                 </Heading>
               </View>
               
               <Body className="text-dentfyTextPrimary">
-                {formData.descricao}
+                {formData.descricao || 'Nenhuma descrição fornecida.'}
               </Body>
             </View>
 

@@ -112,13 +112,21 @@ export default function DetalhesCasoPage() {
       <ScrollView className="flex-1 p-4">
         <DetalhesCaso casoId={caso._id} />
 
-        <View className="flex-row justify-end mt-4">
+        <View className="flex-row justify-between mt-4 px-4">
           <TouchableOpacity
             onPress={() => router.push(`/caso/${id}/localizacoes`)}
             className="flex-row items-center bg-amber-600 px-4 py-2 rounded-lg"
           >
             <Ionicons name="map-outline" size={20} color="white" />
             <Body className="text-white ml-2">Localizações</Body>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push(`/caso/${id}/relatorio`)}
+            className="flex-row items-center bg-dentfyAmber px-4 py-2 rounded-lg"
+          >
+            <Ionicons name="document-text-outline" size={20} color="white" />
+            <Body className="text-white ml-2">Relatório do Caso</Body>
           </TouchableOpacity>
         </View>
 
