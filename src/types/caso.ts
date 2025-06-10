@@ -63,6 +63,7 @@ export interface Perito {
 }
 
 export interface Caso {
+  titulo: ReactNode;
   _id: string;
   numero: string;
   data: string;

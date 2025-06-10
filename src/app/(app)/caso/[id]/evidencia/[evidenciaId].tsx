@@ -170,6 +170,12 @@ export default function DetalhesEvidencia() {
                   >
                     <Ionicons name="trash" size={20} color={colors.errorRed} />
                   </TouchableOpacity>
+
+                  <TouchableOpacity
+                  className="p-3 rounded-full bg-dentfyTextSecondary/10"
+                  >
+                    <Ionicons name="document-text-outline" size={20} color={colors.dentfyTextSecondaryHover} />
+                  </TouchableOpacity>
                 </>
               )}
             </View>
