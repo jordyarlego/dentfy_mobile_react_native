@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, Text, Alert, ActivityIndicator } from 'react-native';
+import { View, ScrollView, TouchableOpacity, TextInput, Text, Alert, ActivityIndicator, Modal, Pressable, StatusBar } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderPerito from '@/components/header';
@@ -21,6 +21,7 @@ export default function DetalhesVitima() {
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState<Vitima | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (typeof vitimaId === 'string') {
@@ -89,6 +90,21 @@ export default function DetalhesVitima() {
     }
   };
 
+  const handleDelete = () => {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = () => {
+    // Aqui a equipe do back-end implementará a chamada da API
+    console.log('Deletando vítima:', vitimaId);
+    
+    // Por enquanto, apenas fecha o modal e volta para a lista
+    setShowDeleteModal(false);
+    Alert.alert('Sucesso', 'Vítima deletada com sucesso!', [
+      { text: 'OK', onPress: () => router.back() },
+    ]);
+  };
+
   const formatarCPF = (cpf: string) => {
     if (!cpf) return '';
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
@@ -144,14 +160,25 @@ export default function DetalhesVitima() {
               </Body>
             </View>
             
-            {!editing && (
-              <TouchableOpacity
-                onPress={() => setEditing(true)}
-                className="p-3 rounded-full bg-dentfyAmber/10"
-              >
-                <Ionicons name="pencil" size={20} color={colors.dentfyAmber} />
-              </TouchableOpacity>
-            )}
+            <View className="flex-row items-center gap-2">
+              {!editing && (
+                <>
+                  <TouchableOpacity
+                    onPress={() => setEditing(true)}
+                    className="p-3 rounded-full bg-dentfyAmber/10"
+                  >
+                    <Ionicons name="pencil" size={20} color={colors.dentfyAmber} />
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    onPress={handleDelete}
+                    className="p-3 rounded-full bg-errorRed/10"
+                  >
+                    <Ionicons name="trash" size={20} color={colors.errorRed} />
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
           </View>
         </View>
 
@@ -290,7 +317,7 @@ export default function DetalhesVitima() {
               <View className="space-y-3">
                 <View className="flex-row items-center">
                   <Ionicons name="card-outline" size={20} color={colors.dentfyTextSecondary} />
-                  <Body className="text-dentfyTextSecondary ml-3 flex-1">CPF:</Body>
+                  <Body className="text-dentfyAmber ml-3 mr-2 font-semibold">CPF:</Body>
                   <Body className="text-dentfyTextPrimary font-medium">
                     {formatarCPF(formData.cpf)}
                   </Body>
@@ -298,7 +325,7 @@ export default function DetalhesVitima() {
                 
                 <View className="flex-row items-center">
                   <Ionicons name="calendar-outline" size={20} color={colors.dentfyTextSecondary} />
-                  <Body className="text-dentfyTextSecondary ml-3 flex-1">Data de Nascimento:</Body>
+                  <Body className="text-dentfyAmber ml-3 mr-2 font-semibold">Data de Nascimento:</Body>
                   <Body className="text-dentfyTextPrimary font-medium">
                     {formatarData(formData.dataNascimento)}
                   </Body>
@@ -306,7 +333,7 @@ export default function DetalhesVitima() {
                 
                 <View className="flex-row items-center">
                   <Ionicons name={getSexoIcon(formData.sexo)} size={20} color={colors.dentfyTextSecondary} />
-                  <Body className="text-dentfyTextSecondary ml-3 flex-1">Sexo:</Body>
+                  <Body className="text-dentfyAmber ml-3 mr-2 font-semibold">Sexo:</Body>
                   <Body className="text-dentfyTextPrimary font-medium">
                     {formData.sexo}
                   </Body>
@@ -314,9 +341,17 @@ export default function DetalhesVitima() {
                 
                 <View className="flex-row items-center">
                   <Ionicons name="people-outline" size={20} color={colors.dentfyTextSecondary} />
-                  <Body className="text-dentfyTextSecondary ml-3 flex-1">Etnia:</Body>
+                  <Body className="text-dentfyAmber ml-3 mr-2 font-semibold">Etnia:</Body>
                   <Body className="text-dentfyTextPrimary font-medium">
                     {formData.etnia}
+                  </Body>
+                </View>
+
+                <View className="flex-row items-center">
+                  <Ionicons name="time-outline" size={20} color={colors.dentfyTextSecondary} />
+                  <Body className="text-dentfyAmber ml-3 mr-2 font-semibold">Criado em:</Body>
+                  <Body className="text-dentfyTextPrimary font-medium">
+                    {formatarData(formData.criadoEm)}
                   </Body>
                 </View>
               </View>
@@ -362,27 +397,64 @@ export default function DetalhesVitima() {
                 </View>
               </View>
             )}
-
-            {/* Informações do Sistema */}
-            <View className="bg-dentfyGray800/30 p-4 rounded-lg">
-              <View className="flex-row items-center mb-3">
-                <Ionicons name="information-circle" size={24} color={colors.dentfyTextSecondary} />
-                <Heading size="medium" className="text-dentfyTextSecondary ml-2">
-                  Informações do Sistema
-                </Heading>
-              </View>
-              
-              <View className="flex-row items-center">
-                <Ionicons name="time-outline" size={20} color={colors.dentfyTextSecondary} />
-                <Body className="text-dentfyTextSecondary ml-3 flex-1">Criado em:</Body>
-                <Body className="text-dentfyTextPrimary font-medium">
-                  {formatarData(formData.criadoEm)}
-                </Body>
-              </View>
-            </View>
           </View>
         )}
       </ScrollView>
+
+      {/* Modal de Confirmação de Delete */}
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+        statusBarTranslucent
+      >
+        <StatusBar backgroundColor="rgba(0, 0, 0, 0.5)" barStyle="light-content" />
+        <Pressable
+          onPress={() => setShowDeleteModal(false)}
+          className="flex-1 bg-black/50"
+        >
+          <View className="flex-1 items-center justify-center p-4">
+            <View className="bg-dentfyGray800 rounded-2xl p-6 w-full max-w-sm border border-dentfyGray700">
+              {/* Ícone de Aviso */}
+              <View className="items-center mb-4">
+                <View className="w-16 h-16 bg-errorRed/20 rounded-full items-center justify-center mb-3">
+                  <Ionicons name="warning" size={32} color={colors.errorRed} />
+                </View>
+                <Heading size="medium" className="text-dentfyTextPrimary text-center">
+                  Deletar Vítima
+                </Heading>
+              </View>
+
+              {/* Mensagem */}
+              <Body className="text-dentfyTextSecondary text-center mb-6 leading-6">
+                Tem certeza que deseja deletar esta vítima? Esta ação não pode ser desfeita.
+              </Body>
+
+              {/* Botões */}
+              <View className="flex-row gap-3">
+                <TouchableOpacity
+                  onPress={() => setShowDeleteModal(false)}
+                  className="flex-1 p-4 bg-dentfyGray700 rounded-lg border border-dentfyGray600"
+                >
+                  <Body className="text-center text-dentfyTextSecondary font-medium">
+                    Cancelar
+                  </Body>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  onPress={confirmDelete}
+                  className="flex-1 p-4 bg-errorRed rounded-lg"
+                >
+                  <Body className="text-center text-white font-medium">
+                    Deletar
+                  </Body>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
