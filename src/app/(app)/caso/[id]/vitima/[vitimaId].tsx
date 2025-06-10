@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, Text, Alert, ActivityIndicator, Modal, Pressable, StatusBar } from 'react-native';
+import { View, ScrollView, TouchableOpacity, TextInput, Text, Alert, ActivityIndicator, Modal, Pressable, StatusBar, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderPerito from '@/components/header';
 import { Body, Heading } from '@/components/Typography';
 import { colors } from '@/theme/colors';
-import type { Vitima } from '@/services/api_vitima';
+import type { Vitima, Odontograma } from '@/services/api_vitima';
 import {
   buscarVitimaPorId,
   atualizarVitima,
@@ -52,7 +52,7 @@ export default function DetalhesVitima() {
     if (!formData || !vitimaId) return;
 
     // Validar campos obrigatórios
-    const camposObrigatorios: (keyof Omit<Vitima, '_id' | 'criadoEm' | 'odontograma' | 'caso'>)[] = [
+    const camposObrigatorios: (keyof Omit<Vitima, '_id' | 'criadoEm' | 'odontograma' | 'odontogramas' | 'caso'>)[] = [
       'nomeCompleto',
       'dataNascimento',
       'sexo',
@@ -75,9 +75,9 @@ export default function DetalhesVitima() {
 
     try {
       setSaving(true);
-      // Montar dados para atualizar (remover _id, criadoEm, odontograma, caso)
+      // Montar dados para atualizar (remover _id, criadoEm, odontograma, odontogramas, caso)
       const {
-        _id, criadoEm, odontograma, caso, ...dadosAtualizar
+        _id, criadoEm, odontograma, odontogramas, caso, ...dadosAtualizar
       } = formData;
 
       await atualizarVitima(vitimaId as string, dadosAtualizar);
@@ -120,6 +120,22 @@ export default function DetalhesVitima() {
     }
   };
 
+  const formatarDataHora = (data: string) => {
+    if (!data) return '';
+    try {
+      const date = new Date(data);
+      return date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return data;
+    }
+  };
+
   const getSexoIcon = (sexo: string) => {
     switch (sexo) {
       case 'Masculino':
@@ -128,6 +144,16 @@ export default function DetalhesVitima() {
         return 'female';
       default:
         return 'person';
+    }
+  };
+
+  const navegarParaOdontograma = (odontogramaId?: string) => {
+    if (odontogramaId) {
+      // Navegar para odontograma específico (visualização)
+      router.push(`/caso/${casoId}/vitima/${vitimaId}/odontograma?id=${odontogramaId}`);
+    } else {
+      // Navegar para criar novo odontograma
+      router.push(`/caso/${casoId}/vitima/${vitimaId}/odontograma`);
     }
   };
 
@@ -163,6 +189,18 @@ export default function DetalhesVitima() {
             <View className="flex-row items-center gap-2">
               {!editing && (
                 <>
+                  <TouchableOpacity
+                    onPress={() => navegarParaOdontograma()}
+                    className="flex-row items-center px-4 py-2 bg-dentfyCyan rounded-lg border border-dentfyCyan"
+                  >
+                    <Image 
+                      source={require('@/assets/logo.png')} 
+                      style={{ width: 16, height: 16, marginRight: 6 }}
+                      resizeMode="contain"
+                    />
+                    <Body className="text-white font-semibold">Odontograma</Body>
+                  </TouchableOpacity>
+                  
                   <TouchableOpacity
                     onPress={() => setEditing(true)}
                     className="p-3 rounded-full bg-dentfyAmber/10"
@@ -373,13 +411,83 @@ export default function DetalhesVitima() {
               </View>
             )}
 
-            {/* Odontograma */}
+            {/* Odontogramas */}
+            <View className="bg-dentfyGray800/30 p-4 rounded-lg">
+              <View className="flex-row items-center mb-4">
+                <View className="flex-row items-center">
+                  <Ionicons name="medical" size={24} color={colors.dentfyAmber} />
+                  <Heading size="medium" className="text-dentfyTextPrimary ml-2">
+                    Odontogramas
+                  </Heading>
+                </View>
+              </View>
+              
+              {formData.odontogramas && formData.odontogramas.length > 0 ? (
+                <View className="space-y-3">
+                  {formData.odontogramas.map((odontograma, index) => (
+                    <TouchableOpacity
+                      key={odontograma.id}
+                      onPress={() => navegarParaOdontograma(odontograma.id)}
+                      className="bg-dentfyGray800/50 p-4 rounded-lg border border-dentfyGray700/30"
+                    >
+                      <View className="flex-row items-center justify-between mb-2">
+                        <View className="flex-row items-center">
+                          <Ionicons name="document-text" size={20} color={colors.dentfyAmber} />
+                          <Body className="text-dentfyTextPrimary font-semibold ml-2">
+                            Odontograma #{index + 1}
+                          </Body>
+                        </View>
+                        <View className="flex-row items-center">
+                          <Ionicons name="eye" size={16} color={colors.dentfyTextSecondary} />
+                          <Body className="text-dentfyTextSecondary ml-1">Ver</Body>
+                        </View>
+                      </View>
+                      
+                      <View className="space-y-1">
+                        <View className="flex-row items-center">
+                          <Ionicons name="calendar" size={16} color={colors.dentfyTextSecondary} />
+                          <Body className="text-dentfyTextSecondary ml-2">
+                            {formatarDataHora(odontograma.dataCriacao)}
+                          </Body>
+                        </View>
+                        
+                        <View className="flex-row items-center">
+                          <Ionicons name="stats-chart" size={16} color={colors.dentfyTextSecondary} />
+                          <Body className="text-dentfyTextSecondary ml-2">
+                            {odontograma.totalAvarias} avaria{odontograma.totalAvarias !== 1 ? 's' : ''} registrada{odontograma.totalAvarias !== 1 ? 's' : ''}
+                          </Body>
+                        </View>
+                        
+                        <View className="flex-row items-center">
+                          <Ionicons name="information-circle" size={16} color={colors.dentfyTextSecondary} />
+                          <Body className="text-dentfyTextPrimary ml-2 font-medium">
+                            {odontograma.resumo}
+                          </Body>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : (
+                <View className="items-center py-8">
+                  <Ionicons name="medical-outline" size={48} color={colors.dentfyTextSecondary} />
+                  <Body className="text-dentfyTextSecondary text-center mt-3">
+                    Nenhum odontograma registrado
+                  </Body>
+                  <Body className="text-dentfyTextSecondary text-center">
+                    Os odontogramas aparecerão aqui quando forem criados
+                  </Body>
+                </View>
+              )}
+            </View>
+
+            {/* Odontograma Legado (se existir) */}
             {formData.odontograma && formData.odontograma.length > 0 && (
               <View className="bg-dentfyGray800/30 p-4 rounded-lg">
                 <View className="flex-row items-center mb-3">
-                  <Ionicons name="medical" size={24} color={colors.dentfyAmber} />
+                  <Ionicons name="archive" size={24} color={colors.dentfyAmber} />
                   <Heading size="medium" className="text-dentfyTextPrimary ml-2">
-                    Odontograma
+                    Odontograma (Legado)
                   </Heading>
                 </View>
                 
