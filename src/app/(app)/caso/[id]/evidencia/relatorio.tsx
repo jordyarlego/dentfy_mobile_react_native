@@ -27,7 +27,7 @@ interface UserInfo {
 }
 
 export default function LaudoEvidenciaPage() {
-  const { id: casoId } = useLocalSearchParams();
+  const { id: casoId, evidenciaId } = useLocalSearchParams();
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
@@ -199,6 +199,19 @@ export default function LaudoEvidenciaPage() {
             </>
           )}
         </View>
+
+        {evidenciaId && (
+          <View className="bg-dentfyGray800 p-4 rounded-lg mb-6 border border-dentfyGray700">
+            <Body className="text-dentfyAmber font-bold mb-1">Evidência:</Body>
+            <Body className="text-dentfyTextPrimary">
+              <Body className="text-dentfyAmber font-bold">ID da Evidência: </Body>
+              {evidenciaId}
+            </Body>
+            <Body className="text-dentfyTextSecondary text-sm mt-2">
+              Laudo específico para esta evidência
+            </Body>
+          </View>
+        )}
 
         <View className="items-center mb-8">
           <TouchableOpacity

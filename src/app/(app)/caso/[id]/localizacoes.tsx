@@ -3,6 +3,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { Ionicons } from '@expo/vector-icons';
 import { Body } from '@/components/Typography';
 import HeaderPerito from '@/components/header';
 import { colors } from '@/theme/colors';
@@ -94,7 +95,6 @@ export default function Localizacoes() {
         });
       }
 
-
       setLocations(novasLocations);
 
       if (novasLocations.length > 0) {
@@ -137,17 +137,17 @@ export default function Localizacoes() {
     }
   };
 
-  const getMarkerColor = (type: LocationType): string => {
+  const getMarkerIcon = (type: LocationType): { name: string; color: string } => {
     switch (type) {
       case 'caso':
-        return colors.dentfyAmber;
+        return { name: 'document-text', color: colors.dentfyAmber };
       case 'periciado':
-        return colors.dentfyRed;
+        return { name: 'person', color: colors.dentfyAmber };
       case 'evidencia':
-        return colors.dentfyBlue;
+        return { name: 'search', color: colors.dentfyAmber };
       default:
         console.warn('Tipo de marcador desconhecido:', type);
-        return colors.dentfyGray;
+        return { name: 'location', color: colors.dentfyAmber };
     }
   };
 
@@ -175,24 +175,46 @@ export default function Localizacoes() {
           region={region}
           onRegionChangeComplete={setRegion}
         >
-          {locations.map((loc) => (
-            <Marker
-              key={loc.id}
-              coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
-              title={loc.title}
-              description={loc.description}
-              pinColor={getMarkerColor(loc.type)}
-              onCalloutPress={() => {
-                if (loc.type === 'evidencia') {
-                  const evidenciaId = loc.id.replace('evidencia_', '');
-                  router.push(`/evidencia/${evidenciaId}`);
-                }
-              }}
-            />
-          ))}
-
+          {locations.map((loc) => {
+            const markerIcon = getMarkerIcon(loc.type);
+            return (
+              <Marker
+                key={loc.id}
+                coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
+                title={loc.title}
+                description={loc.description}
+                onCalloutPress={() => {
+                  if (loc.type === 'evidencia') {
+                    const evidenciaId = loc.id.replace('evidencia_', '');
+                    router.push(`/evidencia/${evidenciaId}`);
+                  }
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: markerIcon.color,
+                    borderRadius: 20,
+                    padding: 8,
+                    borderWidth: 2,
+                    borderColor: 'white',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3.84,
+                    elevation: 5,
+                  }}
+                >
+                  <Ionicons 
+                    name={markerIcon.name as any} 
+                    size={20} 
+                    color="white" 
+                  />
+                </View>
+              </Marker>
+            );
+          })}
         </MapView>
       )}
     </View>
   );
-}
+} 

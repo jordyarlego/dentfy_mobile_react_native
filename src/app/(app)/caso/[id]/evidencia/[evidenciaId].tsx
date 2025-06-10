@@ -172,7 +172,8 @@ export default function DetalhesEvidencia() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                  className="p-3 rounded-full bg-dentfyTextSecondary/10"
+                    onPress={() => router.push(`/caso/${casoId}/evidencia/relatorio?evidenciaId=${evidenciaId}`)}
+                    className="p-3 rounded-full bg-dentfyTextSecondary/10"
                   >
                     <Ionicons name="document-text-outline" size={20} color={colors.dentfyTextSecondaryHover} />
                   </TouchableOpacity>
