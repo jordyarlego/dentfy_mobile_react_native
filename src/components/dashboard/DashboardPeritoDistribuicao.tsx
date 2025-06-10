@@ -16,7 +16,12 @@ export default function DashboardPeritoDistribuicao({
   casosArquivados,
   isLoading,
 }: Props) {
-  const screenWidth = Dimensions.get('window').width - 64; // Ajustado para o novo padding
+  const screenWidth = Dimensions.get('window').width;
+  const isSmallScreen = screenWidth < 400;
+  
+  // Ajusta o tamanho baseado na tela
+  const chartWidth = isSmallScreen ? screenWidth - 32 : screenWidth - 64;
+  const chartHeight = isSmallScreen ? 200 : 250;
 
   const data = [
     {
@@ -24,27 +29,27 @@ export default function DashboardPeritoDistribuicao({
       quantidade: casosEmAndamento,
       color: colors.dentfyAmber,
       legendFontColor: colors.dentfyTextSecondary,
-      legendFontSize: 12,
+      legendFontSize: isSmallScreen ? 10 : 12,
     },
     {
       name: 'Finalizados',
       quantidade: casosFinalizados,
       color: colors.dentfyCyan,
       legendFontColor: colors.dentfyTextSecondary,
-      legendFontSize: 12,
+      legendFontSize: isSmallScreen ? 10 : 12,
     },
     {
       name: 'Arquivados',
       quantidade: casosArquivados,
       color: colors.dentfyGray500,
       legendFontColor: colors.dentfyTextSecondary,
-      legendFontSize: 12,
+      legendFontSize: isSmallScreen ? 10 : 12,
     },
   ];
 
   if (isLoading) {
     return (
-      <View className="h-[250px] items-center justify-center">
+      <View className={`h-[${chartHeight}px] items-center justify-center`}>
         <View className="w-16 h-16 bg-dentfyAmber/20 rounded-full items-center justify-center mb-3 animate-pulse">
           <Text className="text-dentfyAmber text-2xl">📊</Text>
         </View>
@@ -57,8 +62,8 @@ export default function DashboardPeritoDistribuicao({
     <View className="items-center">
       <PieChart
         data={data}
-        width={screenWidth}
-        height={250}
+        width={chartWidth}
+        height={chartHeight}
         chartConfig={{
           backgroundColor: 'transparent',
           backgroundGradientFrom: 'transparent',
@@ -71,7 +76,7 @@ export default function DashboardPeritoDistribuicao({
         }}
         accessor="quantidade"
         backgroundColor="transparent"
-        paddingLeft="15"
+        paddingLeft={isSmallScreen ? "10" : "15"}
         hasLegend={true}
         avoidFalseZero={true}
       />
