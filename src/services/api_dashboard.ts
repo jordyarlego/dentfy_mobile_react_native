@@ -68,37 +68,41 @@ export function useCasosPorTipo(
   const [casosPorTipo, setCasosPorTipo] = useState<CasoTipo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get("/api/dashboard/resumo", {
+        params: {
+          periodo: filtroPeriodo,
+          sexo: filtroSexo,
+          etnia: ajustarEtniaParaEnvio(filtroEtnia),
+        },
+      });
+
+      const { porTipo } = response.data;
+      const dados = porTipo.map((item: TipoItem) => ({
+        tipo: item.tipo,
+        quantidade: item.total,
+      }));
+
+      setCasosPorTipo(dados);
+    } catch (error) {
+      console.error("Erro ao buscar casos por tipo:", error);
+      setCasosPorTipo([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const response = await api.get("/api/dashboard/resumo", {
-          params: {
-            periodo: filtroPeriodo,
-            sexo: filtroSexo,
-            etnia: ajustarEtniaParaEnvio(filtroEtnia),
-          },
-        });
-
-        const { porTipo } = response.data;
-        const dados = porTipo.map((item: TipoItem) => ({
-          tipo: item.tipo,
-          quantidade: item.total,
-        }));
-
-        setCasosPorTipo(dados);
-      } catch (error) {
-        console.error("Erro ao buscar casos por tipo:", error);
-        setCasosPorTipo([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
   }, [filtroPeriodo, filtroSexo, filtroEtnia]);
 
-  return { casosPorTipo, isLoading };
+  const refetch = () => {
+    fetchData();
+  };
+
+  return { casosPorTipo, isLoading, refetch };
 }
 
 // Hook para resumo do dashboard com filtros
@@ -114,58 +118,62 @@ export function useResumoDashboard(
   });
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get<{ porStatus: StatusItem[] }>(
+        "/api/dashboard/resumo",
+        {
+          params: {
+            periodo: filtroPeriodo,
+            sexo: filtroSexo,
+            etnia: ajustarEtniaParaEnvio(filtroEtnia),
+          },
+        }
+      );
+
+      const { porStatus } = response.data;
+      const normalizar = (texto: string) => texto.toLowerCase().trim();
+
+      const andamento =
+        porStatus.find((s: StatusItem) =>
+          normalizar(s.status).includes("andamento")
+        )?.total || 0;
+      const finalizados =
+        porStatus.find((s: StatusItem) =>
+          normalizar(s.status).includes("finalizado")
+        )?.total || 0;
+      const arquivados =
+        porStatus.find((s: StatusItem) =>
+          normalizar(s.status).includes("arquivado")
+        )?.total || 0;
+
+      setDados({
+        casosEmAndamento: andamento,
+        casosFinalizados: finalizados,
+        casosArquivados: arquivados,
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar dados do dashboard:", error);
+      setDados({
+        casosEmAndamento: 0,
+        casosFinalizados: 0,
+        casosArquivados: 0,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const response = await api.get<{ porStatus: StatusItem[] }>(
-          "/api/dashboard/resumo",
-          {
-            params: {
-              periodo: filtroPeriodo,
-              sexo: filtroSexo,
-              etnia: ajustarEtniaParaEnvio(filtroEtnia),
-            },
-          }
-        );
-
-        const { porStatus } = response.data;
-        const normalizar = (texto: string) => texto.toLowerCase().trim();
-
-        const andamento =
-          porStatus.find((s: StatusItem) =>
-            normalizar(s.status).includes("andamento")
-          )?.total || 0;
-        const finalizados =
-          porStatus.find((s: StatusItem) =>
-            normalizar(s.status).includes("finalizado")
-          )?.total || 0;
-        const arquivados =
-          porStatus.find((s: StatusItem) =>
-            normalizar(s.status).includes("arquivado")
-          )?.total || 0;
-
-        setDados({
-          casosEmAndamento: andamento,
-          casosFinalizados: finalizados,
-          casosArquivados: arquivados,
-        });
-      } catch (error) {
-        console.error("Erro ao atualizar dados do dashboard:", error);
-        setDados({
-          casosEmAndamento: 0,
-          casosFinalizados: 0,
-          casosArquivados: 0,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
   }, [filtroPeriodo, filtroSexo, filtroEtnia]);
 
-  return { ...dados, isLoading };
+  const refetch = () => {
+    fetchData();
+  };
+
+  return { ...dados, isLoading, refetch };
 }
 
 // Hook para casos por sexo com filtros
