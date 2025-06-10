@@ -132,8 +132,9 @@ export function useResumoDashboard(
         }
       );
 
-      const { porStatus } = response.data;
-      const normalizar = (texto: string) => texto.toLowerCase().trim();
+      const { porStatus = [] } = response.data;
+      const normalizar = (texto: string | null | undefined) =>
+        (texto || "").toLowerCase().trim();
 
       const andamento =
         porStatus.find((s: StatusItem) =>
@@ -154,7 +155,7 @@ export function useResumoDashboard(
         casosArquivados: arquivados,
       });
     } catch (error) {
-      console.error("Erro ao atualizar dados do dashboard:", error);
+      console.error("Erro detalhado:", error);
       setDados({
         casosEmAndamento: 0,
         casosFinalizados: 0,
