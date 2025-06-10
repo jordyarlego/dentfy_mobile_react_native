@@ -49,7 +49,7 @@ export default function DashboardPeritoCasosMensais({ casos, isLoading }: Props)
           backgroundGradientFrom: 'transparent',
           backgroundGradientTo: 'transparent',
           decimalPlaces: 0,
-          color: (opacity = 1) => `${colors.dentfyCyan}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`,
+          color: (opacity = 1) => `${colors.dentfyAmber}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`,
           labelColor: (opacity = 1) => `${colors.dentfyTextSecondary}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`,
           style: {
             borderRadius: 16,

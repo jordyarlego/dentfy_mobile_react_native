@@ -44,7 +44,7 @@ export default function DashboardPeritoDistribuicao({
 
   if (isLoading) {
     return (
-      <View className="h-[200px] items-center justify-center">
+      <View className="h-[250px] items-center justify-center">
         <View className="w-16 h-16 bg-dentfyAmber/20 rounded-full items-center justify-center mb-3 animate-pulse">
           <Text className="text-dentfyAmber text-2xl">📊</Text>
         </View>
@@ -58,7 +58,7 @@ export default function DashboardPeritoDistribuicao({
       <PieChart
         data={data}
         width={screenWidth}
-        height={200}
+        height={250}
         chartConfig={{
           backgroundColor: 'transparent',
           backgroundGradientFrom: 'transparent',
@@ -72,9 +72,7 @@ export default function DashboardPeritoDistribuicao({
         accessor="quantidade"
         backgroundColor="transparent"
         paddingLeft="15"
-        absolute
         hasLegend={true}
-        center={[screenWidth / 2, 100]}
         avoidFalseZero={true}
       />
     </View>
