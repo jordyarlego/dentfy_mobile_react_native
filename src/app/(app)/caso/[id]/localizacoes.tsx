@@ -1,109 +1,139 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { Body } from '@/components/Typography';
 import HeaderPerito from '@/components/header';
 import { colors } from '@/theme/colors';
-import type { Location, LocationType, Caso } from '@/types/caso';
-import { STORAGE_KEYS } from '@/types/caso';
+import type { Location as CustomLocation, LocationType } from '@/types/caso';
+import api from '@/services/api';
 
 export default function Localizacoes() {
   const { id } = useLocalSearchParams();
+  const router = useRouter();
+
   const [loading, setLoading] = useState(true);
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<CustomLocation[]>([]);
   const [region, setRegion] = useState({
-    latitude: -23.550520,
+    latitude: -23.55052,
     longitude: -46.633308,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
 
   useEffect(() => {
-    carregarLocalizacoes();
+    if (id) {
+      carregarLocalizacoes();
+    }
   }, [id]);
 
   const carregarLocalizacoes = async () => {
     try {
       setLoading(true);
-      const casosStr = await AsyncStorage.getItem(STORAGE_KEYS.CASOS);
-      
-      if (!casosStr) {
-        setLocations([]);
-        return;
-      }
+      const novasLocations: CustomLocation[] = [];
 
-      const casos = JSON.parse(casosStr);
-      const caso = casos.find((c: any) => String(c._id) === String(id));
-      
-      if (!caso) {
-        setLocations([]);
-        return;
-      }
+      // Caso
+      const casoRes = await api.get(`/api/cases/${id}`);
+      const caso = casoRes.data.caso;
 
-      const novasLocations: Location[] = [];
+      const casoLat = Number(caso.latitude);
+      const casoLng = Number(caso.longitude);
 
-      // Adicionar localização do caso
-      if (caso.endereco) {
+      if (!isNaN(casoLat) && !isNaN(casoLng) && caso.local) {
         novasLocations.push({
-          id: 'caso',
-          title: 'Local do Caso',
-          description: caso.endereco,
-          latitude: caso.latitude || 0,
-          longitude: caso.longitude || 0,
+          id: `caso_${caso._id}`,
+          title: `Caso: ${caso.titulo}`,
+          description: caso.local,
+          latitude: casoLat,
+          longitude: casoLng,
           type: 'caso',
         });
       }
+      // Periciados
+      const periciadosRes = await api.get(`/api/periciados/por-caso/${id}`);
+      const periciados = periciadosRes.data;
 
-      // Adicionar localizações dos periciados
-      if (Array.isArray(caso.periciados)) {
-        caso.periciados.forEach((periciado: any) => {
-          if (periciado.endereco) {
+      if (Array.isArray(periciados)) {
+        periciados.forEach((p) => {
+          const lat = Number(p.latitude);
+          const lng = Number(p.longitude);
+
+          if (!isNaN(lat) && !isNaN(lng) && p.endereco) {
             novasLocations.push({
-              id: `periciado_${periciado._id}`,
-              title: `Periciado: ${periciado.nome}`,
-              description: periciado.endereco,
-              latitude: periciado.latitude || 0,
-              longitude: periciado.longitude || 0,
+              id: `periciado_${p._id}`,
+              title: `Periciado: ${p.nomeCompleto || p.nome}`,
+              description: p.endereco,
+              latitude: lat,
+              longitude: lng,
               type: 'periciado',
             });
           }
         });
       }
 
-      // Adicionar localizações das evidências
-      if (Array.isArray(caso.evidencias)) {
-        caso.evidencias.forEach((evidencia: any) => {
-          if (evidencia.latitude && evidencia.longitude) {
+      // Evidências
+      const evidenciasRes = await api.get(`/api/evidences/${id}`);
+      const evidencias = evidenciasRes.data;
+
+      if (Array.isArray(evidencias)) {
+        evidencias.forEach((e) => {
+          const lat = Number(e.latitude);
+          const lng = Number(e.longitude);
+
+          if (!isNaN(lat) && !isNaN(lng)) {
             novasLocations.push({
-              id: `evidencia_${evidencia._id}`,
-              title: `Evidência: ${evidencia.tipo}`,
-              description: evidencia.descricao || '',
-              latitude: evidencia.latitude,
-              longitude: evidencia.longitude,
+              id: `evidencia_${e._id}`,
+              title: `Evidência: ${e.tipo}`,
+              description: e.descricao || '',
+              latitude: lat,
+              longitude: lng,
               type: 'evidencia',
             });
           }
         });
       }
 
+
       setLocations(novasLocations);
 
-      // Se houver localizações, centralizar o mapa na primeira
       if (novasLocations.length > 0) {
+        const first = novasLocations[0];
         setRegion({
-          latitude: novasLocations[0].latitude,
-          longitude: novasLocations[0].longitude,
+          latitude: first.latitude,
+          longitude: first.longitude,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         });
+      } else {
+        await usarLocalizacaoDoDispositivo();
       }
     } catch (error) {
       console.error('Erro ao carregar localizações:', error);
       setLocations([]);
+      await usarLocalizacaoDoDispositivo();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const usarLocalizacaoDoDispositivo = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.warn('Permissão de localização negada');
+        return;
+      }
+
+      const local = await Location.getCurrentPositionAsync({});
+      setRegion({
+        latitude: local.coords.latitude,
+        longitude: local.coords.longitude,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      });
+    } catch (e) {
+      console.warn('Não foi possível obter localização do dispositivo:', e);
     }
   };
 
@@ -116,6 +146,7 @@ export default function Localizacoes() {
       case 'evidencia':
         return colors.dentfyBlue;
       default:
+        console.warn('Tipo de marcador desconhecido:', type);
         return colors.dentfyGray;
     }
   };
@@ -144,20 +175,24 @@ export default function Localizacoes() {
           region={region}
           onRegionChangeComplete={setRegion}
         >
-          {locations.map((location) => (
+          {locations.map((loc) => (
             <Marker
-              key={location.id}
-              coordinate={{
-                latitude: location.latitude,
-                longitude: location.longitude,
+              key={loc.id}
+              coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
+              title={loc.title}
+              description={loc.description}
+              pinColor={getMarkerColor(loc.type)}
+              onCalloutPress={() => {
+                if (loc.type === 'evidencia') {
+                  const evidenciaId = loc.id.replace('evidencia_', '');
+                  router.push(`/evidencia/${evidenciaId}`);
+                }
               }}
-              title={location.title}
-              description={location.description}
-              pinColor={getMarkerColor(location.type)}
             />
           ))}
+
         </MapView>
       )}
     </View>
   );
-} 
+}
