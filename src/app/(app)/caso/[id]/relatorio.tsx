@@ -8,7 +8,9 @@ import { colors } from '@/theme/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buscarCasoCompleto } from '@/services/caso';
 import type { Caso } from '@/types/caso';
+import * as WebBrowser from 'expo-web-browser';
 import { CustomAlert } from '@/components/Feedback/CustomAlert';
+import { criarRelatorio, assinarRelatorio, gerarPDFRelatorio, buscarRelatoriosPorCaso } from '@/services/relatorio';
 
 // Definindo uma interface para o relatório (compatível com o schema do backend)
 interface Relatorio {
@@ -39,7 +41,7 @@ export default function RelatorioCasoPage() {
   const [peritoId, setPeritoId] = useState<string | null>(null);
   const [savedReports, setSavedReports] = useState<Relatorio[]>([]);
   const [caso, setCaso] = useState<Caso | null>(null);
-  
+
   // Estados para o alerta customizado
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
@@ -57,17 +59,31 @@ export default function RelatorioCasoPage() {
     setAlertVisible(false);
   };
 
+  const loadSavedReports = async () => {
+    try {
+      if (casoId) {
+        const relatorios = await buscarRelatoriosPorCaso(casoId as string);
+        setSavedReports(relatorios);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar relatórios:', error);
+      showCustomAlert('Erro', 'Erro ao buscar relatórios do caso.', 'error');
+    }
+  };
+
   useEffect(() => {
+    console.log("casoId:", casoId);
+    console.log("peritoId:", peritoId);
     const loadPeritoInfo = async () => {
       try {
         const userData = await AsyncStorage.getItem('@dentfy:usuario');
         if (userData) {
           const user: UserInfo = JSON.parse(userData);
+          console.log("Perito carregado:", user._id);
           setPeritoId(user._id);
         }
       } catch (error) {
         console.error('Erro ao carregar informações do perito:', error);
-        showCustomAlert('Erro', 'Erro ao carregar informações do perito.', 'error');
       }
     };
     loadPeritoInfo();
@@ -88,29 +104,9 @@ export default function RelatorioCasoPage() {
     };
     loadCasoInfo();
 
-    // Em uma implementação real, você carregaria os relatórios existentes do backend aqui
-    // Para fins de demonstração, vamos simular alguns relatórios salvos.
-    setSavedReports([
-      {
-        _id: 'report1',
-        titulo: 'Relatório Inicial do Caso',
-        conteudo: 'Este é o conteúdo do relatório inicial.',
-        caso: casoId as string,
-        peritoResponsavel: 'mock_perito_id_1',
-        isSigned: true,
-        dataCriacao: new Date().toISOString(),
-      },
-      {
-        _id: 'report2',
-        titulo: 'Relatório de Acompanhamento',
-        conteudo: 'Detalhes do acompanhamento do caso.',
-        caso: casoId as string,
-        peritoResponsavel: 'mock_perito_id_1',
-        isSigned: false,
-        dataCriacao: new Date(Date.now() - 86400000).toISOString(), // Ontem
-      },
-    ]);
-  }, [casoId]);
+
+    loadSavedReports();
+  }, [casoId, peritoId]);
 
   const handleSave = async () => {
     if (!reportTitle.trim()) {
@@ -123,47 +119,72 @@ export default function RelatorioCasoPage() {
     }
 
     setSaving(true);
-    console.log('Salvando relatório:', { titulo: reportTitle, casoId, peritoId });
-    // TODO: Conectar com a API de salvar relatório
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    showCustomAlert('Sucesso', 'Relatório salvo com sucesso!', 'success');
-    setSaving(false);
-    setReportTitle('');
-    // Em uma implementação real, você recarregaria savedReports aqui
+    try {
+      const novoRelatorio = await criarRelatorio({
+        titulo: reportTitle,
+        conteudo: reportTitle, // ou substitua pelo conteúdo real se tiver campo
+        caso: casoId as string,
+        peritoResponsavel: peritoId,
+      });
+      showCustomAlert('Sucesso', 'Relatório salvo com sucesso!', 'success');
+      setReportTitle('');
+      await loadSavedReports(); // recarrega a lista
+    } catch (error) {
+      console.error('Erro ao salvar relatório:', error);
+      showCustomAlert('Erro', 'Erro ao salvar relatório.', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSign = async () => {
-    if (!reportTitle.trim()) {
-      showCustomAlert('Erro', 'O título do relatório não pode ser vazio para assinar.', 'error');
+    if (!savedReports.length) {
+      showCustomAlert('Erro', 'Nenhum relatório salvo para assinar.', 'error');
       return;
     }
+
+    const relatorioMaisRecente = savedReports[0]; // ou use lógica diferente
+
     setSigning(true);
-    console.log('Assinando relatório:', { titulo: reportTitle, casoId, peritoId });
-    // TODO: Conectar com a API de assinar relatório
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    showCustomAlert('Sucesso', 'Relatório assinado com sucesso!', 'success');
-    setSigning(false);
+    try {
+      await assinarRelatorio(relatorioMaisRecente._id);
+      showCustomAlert('Sucesso', 'Relatório assinado com sucesso!', 'success');
+      await loadSavedReports();
+    } catch (error) {
+      console.error('Erro ao assinar relatório:', error);
+      showCustomAlert('Erro', 'Erro ao assinar relatório.', 'error');
+    } finally {
+      setSigning(false);
+    }
   };
 
   const handleGeneratePdf = async () => {
-    if (!reportTitle.trim()) {
-      showCustomAlert('Erro', 'Adicione um título para gerar o PDF.', 'error');
+    if (!savedReports.length) {
+      showCustomAlert('Erro', 'Nenhum relatório salvo para gerar PDF.', 'error');
       return;
     }
+
+    const relatorioMaisRecente = savedReports[0];
+
     setGeneratingPdf(true);
-    console.log('Gerando PDF para relatório:', { titulo: reportTitle, casoId, peritoId });
-    // TODO: Conectar com a API de gerar PDF
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    showCustomAlert('Sucesso', 'PDF gerado com sucesso!', 'success');
-    setGeneratingPdf(false);
-    // Em uma implementação real, você recarregaria savedReports aqui ou adicionaria o novo PDF
+    try {
+      await gerarPDFRelatorio(relatorioMaisRecente._id);
+      showCustomAlert('Sucesso', 'PDF gerado com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      showCustomAlert('Erro', 'Erro ao gerar PDF.', 'error');
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
-  const handleDownloadPdf = (reportId: string, reportTitle: string) => {
-    console.log(`Baixando PDF do relatório: ${reportTitle} (ID: ${reportId})`);
-    // TODO: Conectar com a API de download de PDF
-    showCustomAlert('Download', `Download do "${reportTitle}" iniciado!`, 'info');
+
+  const handleDownloadPdf = async (reportId: string) => {
+    const url = `${process.env.EXPO_PUBLIC_API_URL}/relatorio/${reportId}/pdf`;
+    showCustomAlert('Download', 'Abrindo PDF no navegador...', 'info');
+    await WebBrowser.openBrowserAsync(url);
   };
+
 
   const handleCancel = () => {
     router.back();
@@ -281,7 +302,7 @@ export default function RelatorioCasoPage() {
               {savedReports.map((report, index) => (
                 <View key={report._id}>
                   <TouchableOpacity
-                    onPress={() => handleDownloadPdf(report._id, report.titulo)}
+                    onPress={() => handleDownloadPdf(report._id)}
                     className="bg-dentfyGray800/30 p-4 rounded-lg border border-dentfyGray700/30 flex-row items-center justify-between"
                   >
                     <View className="flex-row items-center">
