@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Text, ActivityIndicator, Image, Dimensions, TouchableOpacity, Modal } from 'react-native';
+import { View, ScrollView, Text, ActivityIndicator, Image, Dimensions, TouchableOpacity, Modal, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
@@ -29,8 +29,10 @@ export default function Odontograma() {
   const [modoVisualizacao, setModoVisualizacao] = useState(false);
   
   const screenWidth = Dimensions.get('window').width;
+  const screenHeight = Dimensions.get('window').height;
   const isSmallScreen = screenWidth < 400;
   const isLargeScreen = screenWidth > 768;
+  const isIOS = Platform.OS === 'ios';
   
   // Ajusta o tamanho da imagem baseado na tela
   const imageWidth = isSmallScreen ? screenWidth - 32 : isLargeScreen ? 400 : 300;
@@ -46,8 +48,8 @@ export default function Odontograma() {
 
   // Lista de tipos de avarias
   const tiposAvaria = [
-    { label: 'Cáriee', value: 'carie' },
-    { label: 'Fraturaa', value: 'fratura' },
+    { label: 'Cárie', value: 'carie' },
+    { label: 'Fratura', value: 'fratura' },
     { label: 'Ausente', value: 'ausente' },
     { label: 'Restauração', value: 'restauracao' },
     { label: 'Implante', value: 'implante' },
@@ -106,7 +108,7 @@ export default function Odontograma() {
       '44': { top: baseHeight * 0.85, left: baseWidth * 0.64 },
       '45': { top: baseHeight * 0.85, left: baseWidth * 0.67 },
       '46': { top: baseHeight * 0.85, left: baseWidth * 0.70 },
-      '47': { top: baseHeight * 0.85, left: baseWidth * 0.76 },
+      '47': { top: baseHeight * 0.85, left: baseWidth * 0.73 },
       '48': { top: baseHeight * 0.85, left: baseWidth * 0.76 },
     };
   };
@@ -276,9 +278,13 @@ export default function Odontograma() {
     <View className="flex-1 bg-dentfyGray900">
       <HeaderPerito showBackButton />
       
-      <ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={true}>
+      <ScrollView 
+        className="flex-1 p-4" 
+        showsVerticalScrollIndicator={true}
+        contentContainerStyle={{ paddingBottom: isIOS ? 100 : 50 }}
+      >
         {/* Header da Página */}
-        <View className="mb-8">
+        <View className="mb-6">
           <View className="flex-row items-center mb-4">
             <View className="flex-1">
               <Heading size="large" className="text-dentfyTextPrimary mb-3">
@@ -343,11 +349,12 @@ export default function Odontograma() {
                       onValueChange={(itemValue) => setDenteSelecionado(itemValue)}
                       style={{ 
                         color: colors.dentfyTextPrimary,
-                        height: 50,
+                        height: isIOS ? 120 : 50,
                         fontSize: 14
                       }}
                       dropdownIconColor={colors.dentfyTextSecondary}
                       numberOfLines={1}
+                      mode={isIOS ? "dropdown" : "dialog"}
                     >
                       <Picker.Item label="Selecione um dente" value={null} />
                       {dentes.map((dente) => (
@@ -366,11 +373,12 @@ export default function Odontograma() {
                       onValueChange={(itemValue) => setAvariaSelecionada(itemValue)}
                       style={{ 
                         color: colors.dentfyTextPrimary,
-                        height: 50,
+                        height: isIOS ? 120 : 50,
                         fontSize: 14
                       }}
                       dropdownIconColor={colors.dentfyTextSecondary}
                       numberOfLines={1}
+                      mode={isIOS ? "dropdown" : "dialog"}
                     >
                       <Picker.Item label="Selecione o tipo" value={null} />
                       {tiposAvaria.map((tipo) => (
@@ -403,7 +411,7 @@ export default function Odontograma() {
           )}
 
           {/* Imagem do Odontograma com Ícones */}
-          <View className="bg-dentfyGray800/30 p-6 rounded-xl border border-dentfyGray700/30 items-center mt-6">
+          <View className="bg-dentfyGray800/30 p-4 rounded-xl border border-dentfyGray700/30 items-center mt-6">
             <View style={{ position: 'relative' }}>
               <Image 
                 source={require('@/assets/odontograma.webp')} 
@@ -437,7 +445,7 @@ export default function Odontograma() {
               })}
             </View>
             
-            <View className="mt-6">
+            <View className="mt-4">
               <Heading size="medium" className="text-dentfyTextPrimary mb-3">
                 Odontograma
               </Heading>

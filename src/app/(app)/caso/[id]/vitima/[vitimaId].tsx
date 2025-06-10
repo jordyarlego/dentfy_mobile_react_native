@@ -480,31 +480,6 @@ export default function DetalhesVitima() {
                 </View>
               )}
             </View>
-
-            {/* Odontograma Legado (se existir) */}
-            {formData.odontograma && formData.odontograma.length > 0 && (
-              <View className="bg-dentfyGray800/30 p-4 rounded-lg">
-                <View className="flex-row items-center mb-3">
-                  <Ionicons name="archive" size={24} color={colors.dentfyAmber} />
-                  <Heading size="medium" className="text-dentfyTextPrimary ml-2">
-                    Odontograma (Legado)
-                  </Heading>
-                </View>
-                
-                <View className="space-y-2">
-                  {formData.odontograma.map((dente, index) => (
-                    <View key={index} className="flex-row justify-between items-center bg-dentfyGray800/50 p-3 rounded">
-                      <Body className="text-dentfyTextSecondary">
-                        Dente {dente.numero}
-                      </Body>
-                      <Body className="text-dentfyTextPrimary">
-                        {dente.descricao}
-                      </Body>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
           </View>
         )}
       </ScrollView>
