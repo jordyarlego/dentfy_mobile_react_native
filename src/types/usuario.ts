@@ -4,5 +4,5 @@ export interface Usuario {
   email: string;
   cpf: string;
   role: "perito" | "assistente";
-  status: string;
-} 
+  status: boolean | "true" | "false" | undefined;
+}

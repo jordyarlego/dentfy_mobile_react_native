@@ -1,8 +1,14 @@
 // Tipos básicos
-export type Sexo = 'masculino' | 'feminino' | 'outro';
-export type Etnia = 'branca' | 'preta' | 'parda' | 'amarela' | 'indigena' | 'outro';
-export type TipoEvidencia = 'imagem' | 'documento';
-export type LocationType = 'caso' | 'periciado' | 'evidencia';
+export type Sexo = "masculino" | "feminino" | "outro";
+export type Etnia =
+  | "branca"
+  | "preta"
+  | "parda"
+  | "amarela"
+  | "indigena"
+  | "outro";
+export type TipoEvidencia = "imagem" | "documento";
+export type LocationType = "caso" | "periciado" | "evidencia";
 
 // Interfaces principais
 export interface Vitima {
@@ -36,7 +42,7 @@ export interface Evidencia {
   descricao: string;
   tipo: TipoEvidencia;
   coletadaPor: string;
-  dataColeta: string;
+  dataColeta: string | Date;
   local: string;
   imagemUri?: string;
   latitude?: number;
@@ -63,7 +69,7 @@ export interface Perito {
 }
 
 export interface Caso {
-  titulo: ReactNode;
+  titulo: string;
   _id: string;
   numero: string;
   data: string;
@@ -150,13 +156,13 @@ export interface CasoResponse {
 
 // Tipos para armazenamento local
 export interface StorageKeys {
-  CASOS: '@dentify_casos';
-  AUTH: '@dentify_auth';
-  USER: '@dentify_user';
+  CASOS: "@dentify_casos";
+  AUTH: "@dentify_auth";
+  USER: "@dentify_user";
 }
 
 export const STORAGE_KEYS: StorageKeys = {
-  CASOS: '@dentify_casos',
-  AUTH: '@dentify_auth',
-  USER: '@dentify_user',
-} as const; 
+  CASOS: "@dentify_casos",
+  AUTH: "@dentify_auth",
+  USER: "@dentify_user",
+} as const;
