@@ -7,33 +7,36 @@ import HeaderPerito from '@/components/header';
 import { Body, Heading } from '@/components/Typography';
 import { colors } from '@/theme/colors';
 import type { Odontograma } from '@/services/api_vitima';
+import { buscarOdontogramaVitima } from '@/services/api_vitima';
+import { atualizarOdontogramaVitima } from '@/services/api_vitima';
+
 
 export default function Odontograma() {
-  const { vitimaId, id: casoId, odontogramaId } = useLocalSearchParams();
+  const { vitimaId, id: casoId } = useLocalSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  
+
   // Estados para a funcionalidade do odontograma
   const [denteSelecionado, setDenteSelecionado] = useState<string | null>(null);
   const [avariaSelecionada, setAvariaSelecionada] = useState<string | null>(null);
   const [dentesAvariados, setDentesAvariados] = useState<Record<string, string>>({});
-  
+
   // Estado para o modal de confirmação
   const [modalVisible, setModalVisible] = useState(false);
   const [denteParaRemover, setDenteParaRemover] = useState<string | null>(null);
-  
+
   // Estado para o modal de sucesso
   const [modalSucessoVisible, setModalSucessoVisible] = useState(false);
-  
+
   // Estado para verificar se é modo de visualização
   const [modoVisualizacao, setModoVisualizacao] = useState(false);
-  
+
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
   const isSmallScreen = screenWidth < 400;
   const isLargeScreen = screenWidth > 768;
   const isIOS = Platform.OS === 'ios';
-  
+
   // Ajusta o tamanho da imagem baseado na tela
   const imageWidth = isSmallScreen ? screenWidth - 32 : isLargeScreen ? 400 : 300;
   const imageHeight = isSmallScreen ? 150 : isLargeScreen ? 280 : 200;
@@ -71,7 +74,7 @@ export default function Odontograma() {
     const scale = isSmallScreen ? 0.6 : isLargeScreen ? 1.2 : 1;
     const baseWidth = isSmallScreen ? screenWidth - 32 : isLargeScreen ? 400 : 300;
     const baseHeight = isSmallScreen ? 150 : isLargeScreen ? 280 : 200;
-    
+
     return {
       // Dentes superiores (11-18, 21-28)
       '11': { top: baseHeight * 0.15, left: baseWidth * 0.45 },
@@ -82,7 +85,7 @@ export default function Odontograma() {
       '16': { top: baseHeight * 0.15, left: baseWidth * 0.30 },
       '17': { top: baseHeight * 0.15, left: baseWidth * 0.27 },
       '18': { top: baseHeight * 0.15, left: baseWidth * 0.24 },
-      
+
       '21': { top: baseHeight * 0.15, left: baseWidth * 0.55 },
       '22': { top: baseHeight * 0.15, left: baseWidth * 0.58 },
       '23': { top: baseHeight * 0.15, left: baseWidth * 0.61 },
@@ -91,7 +94,7 @@ export default function Odontograma() {
       '26': { top: baseHeight * 0.15, left: baseWidth * 0.70 },
       '27': { top: baseHeight * 0.15, left: baseWidth * 0.73 },
       '28': { top: baseHeight * 0.15, left: baseWidth * 0.76 },
-      
+
       // Dentes inferiores (31-38, 41-48)
       '31': { top: baseHeight * 0.85, left: baseWidth * 0.45 },
       '32': { top: baseHeight * 0.85, left: baseWidth * 0.42 },
@@ -101,7 +104,7 @@ export default function Odontograma() {
       '36': { top: baseHeight * 0.85, left: baseWidth * 0.30 },
       '37': { top: baseHeight * 0.85, left: baseWidth * 0.27 },
       '38': { top: baseHeight * 0.85, left: baseWidth * 0.24 },
-      
+
       '41': { top: baseHeight * 0.85, left: baseWidth * 0.55 },
       '42': { top: baseHeight * 0.85, left: baseWidth * 0.58 },
       '43': { top: baseHeight * 0.85, left: baseWidth * 0.61 },
@@ -148,33 +151,28 @@ export default function Odontograma() {
   // Função para salvar odontograma
   const salvarOdontograma = async () => {
     try {
-      // Criar resumo do odontograma
-      const resumoOdontograma: Odontograma = {
-        id: Date.now().toString(),
-        dataCriacao: new Date().toISOString(),
-        totalAvarias: Object.keys(dentesAvariados).length,
-        avarias: dentesAvariados,
-        resumo: gerarResumoAvarias(),
-        imagemComIcones: true
-      };
+      // Transforma { "12": "Fratura", "26": "Ausente" }
+      // em [ { numero: 12, descricao: "Fratura" }, { numero: 26, descricao: "Ausente" } ]
+      const odontogramaArray = Object.entries(dentesAvariados).map(
+        ([numero, descricao]) => ({
+          numero: parseInt(numero),
+          descricao,
+        })
+      );
 
-      // TODO: Equipe do backend implementará a integração com a API
-      // await adicionarOdontograma(vitimaId as string, resumoOdontograma);
-      console.log('Dados do odontograma para salvar:', resumoOdontograma);
-      
-      // Mostrar modal de sucesso
+      await atualizarOdontogramaVitima(vitimaId as string, odontogramaArray);
+
       setModalSucessoVisible(true);
     } catch (error) {
       console.error('Erro ao salvar odontograma:', error);
-      // Em caso de erro, ainda mostrar o modal de sucesso
-      setModalSucessoVisible(true);
+      // Aqui você pode exibir uma mensagem ao usuário
     }
   };
 
   // Função para gerar resumo das avarias
   const gerarResumoAvarias = () => {
     const contadores: Record<string, number> = {};
-    
+
     Object.values(dentesAvariados).forEach(tipo => {
       contadores[tipo] = (contadores[tipo] || 0) + 1;
     });
@@ -219,27 +217,22 @@ export default function Odontograma() {
 
   // Função para carregar odontograma existente
   const carregarOdontogramaExistente = async () => {
-    if (!odontogramaId) return;
-    
+    if (!vitimaId) return;
+
     try {
       setLoading(true);
-      
-      // TODO: Equipe do backend implementará a busca do odontograma
-      // const vitima = await buscarVitimaPorId(vitimaId as string);
-      // const odontograma = vitima.odontogramas?.find(o => o.id === odontogramaId);
-      
-      // Simulação para demonstração
-      console.log('Carregando odontograma:', odontogramaId);
-      
-      // Simular dados de exemplo para visualização
-      if (odontogramaId === 'demo') {
-        setDentesAvariados({
-          '11': 'carie',
-          '22': 'fratura',
-          '35': 'ausente'
-        });
-        setModoVisualizacao(true);
-      }
+
+      // Busca os dados do odontograma via backend
+      const dados = await buscarOdontogramaVitima(vitimaId as string);
+
+      // Transforma a lista em objeto: { '11': 'carie', '22': 'fratura' }
+      const mapeado: Record<string, string> = {};
+      dados.forEach((item) => {
+        mapeado[item.numero.toString()] = item.descricao;
+      });
+
+      setDentesAvariados(mapeado);
+      setModoVisualizacao(true); // ou false, dependendo se quer edição
     } catch (error) {
       console.error('Erro ao carregar odontograma:', error);
     } finally {
@@ -248,17 +241,25 @@ export default function Odontograma() {
   };
 
   useEffect(() => {
-    if (odontogramaId) {
+    console.log("📦 useEffect disparado com odontogramaId:", vitimaId);
+
+    if (vitimaId) {
+      console.log("➡️ Chamando carregarOdontogramaExistente()");
       carregarOdontogramaExistente();
     } else {
-      // Simular carregamento inicial para novo odontograma
+      console.log("🆕 Nenhum odontogramaId - carregando novo");
       const timer = setTimeout(() => {
         setLoading(false);
       }, 1000);
 
       return () => clearTimeout(timer);
     }
-  }, [odontogramaId]);
+  }, [vitimaId]);
+
+  // ✅ Esse useEffect é só para logar quando dentesAvariados muda
+  useEffect(() => {
+    console.log("🦷 Estado atualizado dos dentes:", dentesAvariados);
+  }, [dentesAvariados]);
 
   if (loading) {
     return (
@@ -267,7 +268,7 @@ export default function Odontograma() {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={colors.dentfyAmber} />
           <Body className="text-dentfyTextSecondary mt-4">
-            {odontogramaId ? 'Carregando odontograma...' : 'Carregando...'}
+            {vitimaId ? 'Carregando odontograma...' : 'Carregando...'}
           </Body>
         </View>
       </View>
@@ -277,9 +278,9 @@ export default function Odontograma() {
   return (
     <View className="flex-1 bg-dentfyGray900">
       <HeaderPerito showBackButton />
-      
-      <ScrollView 
-        className="flex-1 p-4" 
+
+      <ScrollView
+        className="flex-1 p-4"
         showsVerticalScrollIndicator={true}
         contentContainerStyle={{ paddingBottom: isIOS ? 100 : 50 }}
       >
@@ -291,13 +292,25 @@ export default function Odontograma() {
                 {modoVisualizacao ? 'Visualizar Odontograma' : 'Odontograma'}
               </Heading>
               <Body className="text-dentfyTextSecondary">
-                {modoVisualizacao 
+                {modoVisualizacao
                   ? 'Visualização do odontograma salvo'
                   : 'Visualização e edição do odontograma da vítima'
                 }
               </Body>
             </View>
           </View>
+        </View>
+
+        <View className="px-4 mt-4">
+          <TouchableOpacity
+            onPress={() => setModoVisualizacao(prev => !prev)}
+            className="bg-dentfyAmber rounded-2xl py-3 px-6 shadow-md"
+            style={{ alignSelf: 'center', minWidth: '60%' }}
+          >
+            <Body className="text-black font-semibold text-center text-base">
+              {modoVisualizacao ? 'Ativar Edição' : 'Modo Visualização'}
+            </Body>
+          </TouchableOpacity>
         </View>
 
         {/* Conteúdo Principal */}
@@ -310,7 +323,8 @@ export default function Odontograma() {
                 Informações do Odontograma
               </Body>
             </View>
-            
+
+
             <View>
               <View className="flex-row justify-between mb-2">
                 <Body className="text-dentfyTextSecondary">Vítima ID:</Body>
@@ -338,7 +352,7 @@ export default function Odontograma() {
                   Registrar Avaria
                 </Body>
               </View>
-              
+
               <View>
                 {/* Dropdown Dente */}
                 <View className="mb-4">
@@ -347,7 +361,7 @@ export default function Odontograma() {
                     <Picker
                       selectedValue={denteSelecionado}
                       onValueChange={(itemValue) => setDenteSelecionado(itemValue)}
-                      style={{ 
+                      style={{
                         color: colors.dentfyTextPrimary,
                         height: isIOS ? 120 : 50,
                         fontSize: 14
@@ -371,7 +385,7 @@ export default function Odontograma() {
                     <Picker
                       selectedValue={avariaSelecionada}
                       onValueChange={(itemValue) => setAvariaSelecionada(itemValue)}
-                      style={{ 
+                      style={{
                         color: colors.dentfyTextPrimary,
                         height: isIOS ? 120 : 50,
                         fontSize: 14
@@ -392,17 +406,15 @@ export default function Odontograma() {
                 <TouchableOpacity
                   onPress={salvarAvaria}
                   disabled={!denteSelecionado || !avariaSelecionada}
-                  className={`p-3 rounded-lg ${
-                    denteSelecionado && avariaSelecionada
-                      ? 'bg-green-600'
-                      : 'bg-dentfyGray700'
-                  }`}
+                  className={`p-3 rounded-lg ${denteSelecionado && avariaSelecionada
+                    ? 'bg-green-600'
+                    : 'bg-dentfyGray700'
+                    }`}
                 >
-                  <Body className={`text-center font-semibold ${
-                    denteSelecionado && avariaSelecionada
-                      ? 'text-white'
-                      : 'text-dentfyTextSecondary'
-                  }`}>
+                  <Body className={`text-center font-semibold ${denteSelecionado && avariaSelecionada
+                    ? 'text-white'
+                    : 'text-dentfyTextSecondary'
+                    }`}>
                     Salvar Avaria
                   </Body>
                 </TouchableOpacity>
@@ -413,19 +425,20 @@ export default function Odontograma() {
           {/* Imagem do Odontograma com Ícones */}
           <View className="bg-dentfyGray800/30 p-4 rounded-xl border border-dentfyGray700/30 items-center mt-6">
             <View style={{ position: 'relative' }}>
-              <Image 
-                source={require('@/assets/odontograma.webp')} 
-                style={{ 
-                  width: imageWidth, 
+              <Image
+                source={require('@/assets/odontograma.webp')}
+                style={{
+                  width: imageWidth,
                   height: imageHeight,
                   borderRadius: 12
                 }}
                 resizeMode="contain"
               />
-              
+
               {/* Ícones sobrepostos */}
               {Object.entries(dentesAvariados).map(([numero, tipo]) => {
                 const pos = mapaCoordenadas[numero];
+                console.log("Render dente:", numero, "Tipo:", tipo, "Posição:", pos);
                 return pos ? (
                   <TouchableOpacity
                     key={numero}
@@ -444,13 +457,13 @@ export default function Odontograma() {
                 ) : null;
               })}
             </View>
-            
+
             <View className="mt-4">
               <Heading size="medium" className="text-dentfyTextPrimary mb-3">
                 Odontograma
               </Heading>
               <Body className="text-dentfyTextSecondary text-center">
-                {modoVisualizacao 
+                {modoVisualizacao
                   ? 'Odontograma salvo com avarias marcadas'
                   : 'Toque nos ícones para remover avarias'
                 }
@@ -483,7 +496,7 @@ export default function Odontograma() {
                 Legenda dos Ícones
               </Body>
             </View>
-            
+
             <View className="space-y-3">
               {Object.entries(icones).map(([tipo, config]) => (
                 <View key={tipo} className="flex-row items-center">

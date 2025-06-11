@@ -229,10 +229,10 @@ export default function NovaVitima() {
                 dropdownIconColor="white"
                 enabled={!loading}
               >
-                <Picker.Item label="Branca" value="Branca" />
-                <Picker.Item label="Preta" value="Preta" />
-                <Picker.Item label="Parda" value="Parda" />
-                <Picker.Item label="Amarela" value="Amarela" />
+                <Picker.Item label="Branca" value="Branco" />
+                <Picker.Item label="Preta" value="Preto" />
+                <Picker.Item label="Parda" value="Pardo" />
+                <Picker.Item label="Amarela" value="Amarelo" />
                 <Picker.Item label="Indígena" value="Indígena" />
                 <Picker.Item label="Outro" value="Outro" />
               </Picker>
