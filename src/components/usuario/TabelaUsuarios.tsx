@@ -48,12 +48,16 @@ export default function TabelaUsuarios() {
       setAcessoNegado(false);
     } catch (error: any) {
       console.error("Erro ao carregar usuários:", error);
-      if (error.response?.status === 403) {
+      // Verifica se é erro 403 ou mensagem específica de permissão
+      if (
+        error.response?.status === 403 ||
+        error.message?.includes("não tem permissão")
+      ) {
         setAcessoNegado(true);
         showToast("Você não tem permissão para acessar esta área.", "error");
-      } else {
-        showToast("Não foi possível carregar a lista de usuários.", "error");
+        return; // Importante: retornar aqui para garantir que a tela de acesso negado seja mostrada
       }
+      showToast("Não foi possível carregar a lista de usuários.", "error");
     } finally {
       setLoading(false);
     }
