@@ -9,6 +9,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buscarCasoCompleto } from '@/services/caso';
 import type { Caso } from '@/types/caso';
 import * as WebBrowser from 'expo-web-browser';
+import axios from '@/services/api'; // use o `api` com interceptor
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
+import * as Linking from 'expo-linking';
+import { Alert } from 'react-native';
 import { CustomAlert } from '@/components/Feedback/CustomAlert';
 import { criarRelatorio, assinarRelatorio, gerarPDFRelatorio, buscarRelatoriosPorCaso } from '@/services/relatorio';
 
@@ -41,6 +47,7 @@ export default function RelatorioCasoPage() {
   const [peritoId, setPeritoId] = useState<string | null>(null);
   const [savedReports, setSavedReports] = useState<Relatorio[]>([]);
   const [caso, setCaso] = useState<Caso | null>(null);
+  const [ultimoRelatorioCriado, setUltimoRelatorioCriado] = useState<Relatorio | null>(null);
 
   // Estados para o alerta customizado
   const [alertVisible, setAlertVisible] = useState(false);
@@ -72,47 +79,42 @@ export default function RelatorioCasoPage() {
   };
 
   useEffect(() => {
-    console.log("casoId:", casoId);
-    console.log("peritoId:", peritoId);
-    const loadPeritoInfo = async () => {
+    const carregarDadosIniciais = async () => {
       try {
+        if (!casoId) return;
+
         const userData = await AsyncStorage.getItem('@dentfy:usuario');
         if (userData) {
           const user: UserInfo = JSON.parse(userData);
-          console.log("Perito carregado:", user._id);
           setPeritoId(user._id);
+          console.log('Perito carregado:', user._id);
         }
-      } catch (error) {
-        console.error('Erro ao carregar informações do perito:', error);
-      }
-    };
-    loadPeritoInfo();
 
-    const loadCasoInfo = async () => {
-      setLoading(true);
-      try {
-        if (casoId) {
-          const data = await buscarCasoCompleto(casoId as string);
-          setCaso(data.caso);
-        }
+        // 2. Carrega caso
+        setLoading(true);
+        const data = await buscarCasoCompleto(casoId as string);
+        setCaso(data.caso);
+
+        // 3. Carrega relatórios
+        const relatorios = await buscarRelatoriosPorCaso(casoId as string);
+        setSavedReports(relatorios);
       } catch (error) {
-        console.error('Erro ao carregar caso:', error);
-        showCustomAlert('Erro', 'Erro ao carregar informações do caso.', 'error');
+        console.error('Erro ao carregar dados iniciais:', error);
+        showCustomAlert('Erro', 'Erro ao carregar dados iniciais.', 'error');
       } finally {
         setLoading(false);
       }
     };
-    loadCasoInfo();
 
-
-    loadSavedReports();
-  }, [casoId, peritoId]);
+    carregarDadosIniciais();
+  }, [casoId]);
 
   const handleSave = async () => {
     if (!reportTitle.trim()) {
       showCustomAlert('Erro', 'O título do relatório não pode ser vazio.', 'error');
       return;
     }
+
     if (!casoId || !peritoId) {
       showCustomAlert('Erro', 'Informações de caso ou perito faltando.', 'error');
       return;
@@ -122,13 +124,15 @@ export default function RelatorioCasoPage() {
     try {
       const novoRelatorio = await criarRelatorio({
         titulo: reportTitle,
-        conteudo: reportTitle, // ou substitua pelo conteúdo real se tiver campo
+        conteudo: reportTitle,
         caso: casoId as string,
         peritoResponsavel: peritoId,
       });
+
+      setUltimoRelatorioCriado(novoRelatorio); // ✅ armazena último
       showCustomAlert('Sucesso', 'Relatório salvo com sucesso!', 'success');
       setReportTitle('');
-      await loadSavedReports(); // recarrega a lista
+      await loadSavedReports();
     } catch (error) {
       console.error('Erro ao salvar relatório:', error);
       showCustomAlert('Erro', 'Erro ao salvar relatório.', 'error');
@@ -138,16 +142,21 @@ export default function RelatorioCasoPage() {
   };
 
   const handleSign = async () => {
-    if (!savedReports.length) {
-      showCustomAlert('Erro', 'Nenhum relatório salvo para assinar.', 'error');
+    const relatorio = ultimoRelatorioCriado ?? savedReports[0];
+
+    if (!relatorio) {
+      showCustomAlert('Erro', 'Nenhum relatório disponível para assinar.', 'error');
       return;
     }
 
-    const relatorioMaisRecente = savedReports[0]; // ou use lógica diferente
+    if (relatorio.isSigned) {
+      showCustomAlert('Aviso', 'Este relatório já está assinado.', 'warning');
+      return;
+    }
 
     setSigning(true);
     try {
-      await assinarRelatorio(relatorioMaisRecente._id);
+      await assinarRelatorio(relatorio._id);
       showCustomAlert('Sucesso', 'Relatório assinado com sucesso!', 'success');
       await loadSavedReports();
     } catch (error) {
@@ -159,17 +168,19 @@ export default function RelatorioCasoPage() {
   };
 
   const handleGeneratePdf = async () => {
-    if (!savedReports.length) {
+    const relatorio = ultimoRelatorioCriado ?? savedReports[0];
+
+    if (!relatorio) {
       showCustomAlert('Erro', 'Nenhum relatório salvo para gerar PDF.', 'error');
       return;
     }
 
-    const relatorioMaisRecente = savedReports[0];
-
     setGeneratingPdf(true);
     try {
-      await gerarPDFRelatorio(relatorioMaisRecente._id);
-      showCustomAlert('Sucesso', 'PDF gerado com sucesso!', 'success');
+      await gerarPDFRelatorio(relatorio._id);
+      showCustomAlert('Sucesso', 'PDF gerado com sucesso! Baixando...', 'success');
+
+      await handleDownloadPdf(relatorio._id); // ✅ já baixa logo após gerar
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       showCustomAlert('Erro', 'Erro ao gerar PDF.', 'error');
@@ -178,11 +189,39 @@ export default function RelatorioCasoPage() {
     }
   };
 
-
   const handleDownloadPdf = async (reportId: string) => {
-    const url = `${process.env.EXPO_PUBLIC_API_URL}/relatorio/${reportId}/pdf`;
-    showCustomAlert('Download', 'Abrindo PDF no navegador...', 'info');
-    await WebBrowser.openBrowserAsync(url);
+    try {
+      const url = `/api/relatorio/${reportId}/pdf`;
+      const fileUri = `${FileSystem.documentDirectory}relatorio_${reportId}.pdf`;
+
+      const response = await axios.get(url, {
+        responseType: 'blob',
+      });
+
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Data = reader.result?.toString().split(',')[1];
+
+        if (base64Data) {
+          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(fileUri);
+          } else {
+            Alert.alert('PDF salvo', `Arquivo salvo em ${fileUri}, mas não é possível abrir automaticamente.`);
+          }
+        } else {
+          Alert.alert('Erro', 'Não foi possível ler o PDF.');
+        }
+      };
+
+      reader.readAsDataURL(response.data);
+    } catch (error) {
+      console.error('Erro ao baixar o PDF:', error);
+      Alert.alert('Erro', 'Falha ao baixar o PDF.');
+    }
   };
 
 
@@ -256,7 +295,7 @@ export default function RelatorioCasoPage() {
 
           <TouchableOpacity
             onPress={handleSign}
-            disabled={saving || signing || generatingPdf || !reportTitle.trim()}
+            disabled={saving || signing || generatingPdf || savedReports.length === 0}
             className={saving || signing || generatingPdf || !reportTitle.trim() ? "flex-row items-center justify-center w-4/5 h-12 rounded-lg bg-dentfyMediumBlueDisabled mb-5" : "flex-row items-center justify-center w-4/5 h-12 rounded-lg bg-[#9E27FE] mb-5"}
           >
             {signing ? (
@@ -271,7 +310,7 @@ export default function RelatorioCasoPage() {
 
           <TouchableOpacity
             onPress={handleGeneratePdf}
-            disabled={saving || signing || generatingPdf || !reportTitle.trim()}
+            disabled={saving || signing || generatingPdf || savedReports.length === 0}
             className={saving || signing || generatingPdf || !reportTitle.trim() ? "flex-row items-center justify-center w-4/5 h-12 rounded-lg bg-dentfyGray700" : "flex-row items-center justify-center w-4/5 h-12 rounded-lg bg-dentfyGray800 border border-dentfyGray700"}
           >
             {generatingPdf ? (
@@ -316,7 +355,7 @@ export default function RelatorioCasoPage() {
                         </Body>
                         {report.isSigned && (
                           <View className="mt-1 flex-row items-center">
-                            <Ionicons name="checkmark-circle" size={16} color={colors.dentfyGreen} />
+                            <Ionicons name="checkmark-circle" size={16} color={colors.successGreen} />
                             <Body className="text-dentfyGreen text-sm ml-1">Assinado</Body>
                           </View>
                         )}

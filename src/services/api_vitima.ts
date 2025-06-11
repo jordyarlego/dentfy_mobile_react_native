@@ -1,6 +1,6 @@
 import api from "./api";
 
-// Tipagem da vítima (periciado)
+
 export interface Vitima {
   _id: string;
   nomeCompleto: string;
@@ -15,17 +15,6 @@ export interface Vitima {
     numero: number;
     descricao: string;
   }[];
-  odontogramas?: Odontograma[];
-}
-
-// Nova interface para odontograma
-export interface Odontograma {
-  id: string;
-  dataCriacao: string;
-  totalAvarias: number;
-  avarias: Record<string, string>;
-  resumo: string;
-  imagemComIcones: boolean;
 }
 
 export interface CriarVitimaDTO extends Omit<Vitima, "_id" | "criadoEm"> {}
@@ -91,20 +80,6 @@ export const atualizarVitima = async (
     return response.data;
   } catch (error) {
     console.error("Erro ao atualizar vítima:", error.response?.data || error);
-    throw error;
-  }
-};
-
-// Adicionar odontograma à vítima
-export const adicionarOdontograma = async (
-  vitimaId: string,
-  odontograma: Odontograma
-): Promise<Vitima> => {
-  try {
-    const response = await api.post<Vitima>(`/api/periciados/${vitimaId}/odontogramas`, odontograma);
-    return response.data;
-  } catch (error) {
-    console.error("Erro ao adicionar odontograma:", error.response?.data || error);
     throw error;
   }
 };
