@@ -45,7 +45,12 @@ export default function ModalVisualizacaoUsuario({
     try {
       setLoading(true);
       const dados = await GetUsuarioById(id);
-      setDetalhesUsuario(dados);
+      // Inverte o status vindo da API
+      const dadosAjustados = {
+        ...dados,
+        status: dados.status === false || dados.status === "false",
+      };
+      setDetalhesUsuario(dadosAjustados);
     } catch (error: any) {
       showToast(
         error.message || "Erro ao carregar detalhes do usuário",
@@ -100,6 +105,15 @@ export default function ModalVisualizacaoUsuario({
       await carregarDetalhesUsuario(usuario._id);
       onEdit(detalhesUsuario!);
     }
+  };
+
+  const renderStatus = (status: boolean | undefined) => {
+    const isAtivo = status === false || status === undefined;
+    return (
+      <Text className={`${isAtivo ? "text-green-400" : "text-red-400"}`}>
+        {isAtivo ? "Ativo" : "Inativo"}
+      </Text>
+    );
   };
 
   if (!visible || !usuario) return null;
@@ -234,15 +248,7 @@ export default function ModalVisualizacaoUsuario({
                           Status
                         </Text>
                       </View>
-                      <Text
-                        className={`${
-                          detalhesUsuario?.status
-                            ? "text-green-400"
-                            : "text-red-400"
-                        }`}
-                      >
-                        {detalhesUsuario?.status ? "Ativo" : "Inativo"}
-                      </Text>
+                      {renderStatus(detalhesUsuario?.status)}
                     </View>
                   </View>
                 </ScrollView>
