@@ -1,6 +1,6 @@
 import api from "./api";
+import { AxiosError } from "axios";
 
-// Tipagem da vítima (periciado)
 export interface Vitima {
   _id: string;
   nomeCompleto: string;
@@ -15,21 +15,9 @@ export interface Vitima {
     numero: number;
     descricao: string;
   }[];
-  odontogramas?: Odontograma[];
-}
-
-// Nova interface para odontograma
-export interface Odontograma {
-  id: string;
-  dataCriacao: string;
-  totalAvarias: number;
-  avarias: Record<string, string>;
-  resumo: string;
-  imagemComIcones: boolean;
 }
 
 export interface CriarVitimaDTO extends Omit<Vitima, "_id" | "criadoEm"> {}
-
 export interface AtualizarVitimaDTO
   extends Partial<Omit<Vitima, "_id" | "criadoEm">> {}
 
@@ -39,7 +27,8 @@ export const criarVitima = async (dados: CriarVitimaDTO): Promise<Vitima> => {
     const response = await api.post<Vitima>("/api/periciados", dados);
     return response.data;
   } catch (error) {
-    console.error("Erro ao criar vítima:", error.response?.data || error);
+    const err = error as AxiosError;
+    console.error("Erro ao criar vítima:", err.response?.data || err.message);
     throw error;
   }
 };
@@ -50,7 +39,8 @@ export const listarVitimas = async (): Promise<Vitima[]> => {
     const response = await api.get<Vitima[]>("/api/periciados");
     return response.data;
   } catch (error) {
-    console.error("Erro ao listar vítimas:", error.response?.data || error);
+    const err = error as AxiosError;
+    console.error("Erro ao listar vítimas:", err.response?.data || err.message);
     throw error;
   }
 };
@@ -61,7 +51,8 @@ export const buscarVitimaPorId = async (id: string): Promise<Vitima> => {
     const response = await api.get<Vitima>(`/api/periciados/${id}`);
     return response.data;
   } catch (error) {
-    console.error("Erro ao buscar vítima:", error.response?.data || error);
+    const err = error as AxiosError;
+    console.error("Erro ao buscar vítima:", err.response?.data || err.message);
     throw error;
   }
 };
@@ -76,7 +67,8 @@ export const buscarVitimasPorCaso = async (
     );
     return response.data;
   } catch (error) {
-    console.error("Erro ao buscar vítimas por caso:", error.response?.data || error);
+    const err = error as AxiosError;
+    console.error("Erro ao buscar vítimas por caso:", err.response?.data || err.message);
     throw error;
   }
 };
@@ -90,21 +82,8 @@ export const atualizarVitima = async (
     const response = await api.put<Vitima>(`/api/periciados/${id}`, dados);
     return response.data;
   } catch (error) {
-    console.error("Erro ao atualizar vítima:", error.response?.data || error);
-    throw error;
-  }
-};
-
-// Adicionar odontograma à vítima
-export const adicionarOdontograma = async (
-  vitimaId: string,
-  odontograma: Odontograma
-): Promise<Vitima> => {
-  try {
-    const response = await api.post<Vitima>(`/api/periciados/${vitimaId}/odontogramas`, odontograma);
-    return response.data;
-  } catch (error) {
-    console.error("Erro ao adicionar odontograma:", error.response?.data || error);
+    const err = error as AxiosError;
+    console.error("Erro ao atualizar vítima:", err.response?.data || err.message);
     throw error;
   }
 };
@@ -114,7 +93,41 @@ export const deletarVitima = async (id: string): Promise<void> => {
   try {
     await api.delete(`/api/periciados/${id}`);
   } catch (error) {
-    console.error("Erro ao deletar vítima:", error.response?.data || error);
+    const err = error as AxiosError;
+    console.error("Erro ao deletar vítima:", err.response?.data || err.message);
+    throw error;
+  }
+};
+
+// Atualizar odontograma
+export const atualizarOdontogramaVitima = async (
+  id: string,
+  odontograma: { numero: number; descricao: string }[]
+): Promise<Vitima> => {
+  try {
+    const response = await api.patch<Vitima>(
+      `/api/periciados/${id}/odontograma`,
+      { odontograma }
+    );
+    return response.data;
+  } catch (error) {
+    const err = error as AxiosError;
+    console.error("Erro ao atualizar odontograma:", err.response?.data || err.message);
+    throw error;
+  }
+};
+
+export const buscarOdontogramaVitima = async (
+  id: string
+): Promise<{ numero: number; descricao: string }[]> => {
+  try {
+    const response = await api.get<{ numero: number; descricao: string }[]>(
+      `/api/periciados/${id}/odontograma`
+    );
+    return response.data;
+  } catch (error) {
+    const err = error as AxiosError;
+    console.error("Erro ao buscar odontograma:", err.response?.data || err.message);
     throw error;
   }
 };

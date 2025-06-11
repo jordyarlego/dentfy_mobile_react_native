@@ -74,7 +74,7 @@ export const assinarRelatorio = async (
   id: string
 ): Promise<{ message: string; assinatura: string }> => {
   try {
-    const response = await api.post(`/api/relatorio/${id}/assinar`);
+    const response = await api.post(`/api/relatorio/${id}/assinar`, {},);
     return response.data;
   } catch (error: any) {
     console.error("Erro ao assinar relatório:", error.response?.data || error);

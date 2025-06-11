@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const api = axios.create({
   baseURL: 'https://dentify-backend-dct4.onrender.com',
-  timeout: 10000, // Aumentado para 10 segundos
+  timeout: 300000, // Aumentado para 10 segundos
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

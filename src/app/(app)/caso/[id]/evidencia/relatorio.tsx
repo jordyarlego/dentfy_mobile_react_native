@@ -1,24 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderPerito from '@/components/header';
 import { Body, Heading } from '@/components/Typography';
 import { colors } from '@/theme/colors';
+import type { Evidencia } from '@/types/evidencia';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { buscarCasoCompleto } from '@/services/caso';
-import type { Caso } from '@/types/caso';
+import axios from '@/services/api';
+import { Laudo } from '@/services/laudo'; // ajuste o caminho
+import { criarLaudo, assinarLaudo, gerarPDFLaudo, buscarLaudosPorEvidencia } from '@/services/laudo';
 import { CustomAlert } from '@/components/Feedback/CustomAlert';
-
-interface Laudo {
-  _id: string;
-  titulo: string;
-  conteudo: string;
-  caso: string;
-  peritoResponsavel: string;
-  isSigned: boolean;
-  dataCriacao: string;
-}
+import type { Caso } from '@/types/caso';
 
 interface UserInfo {
   _id: string;
@@ -27,18 +23,21 @@ interface UserInfo {
 }
 
 export default function LaudoEvidenciaPage() {
-  const { id: casoId, evidenciaId } = useLocalSearchParams();
+  const { evidenciaId: evidenceId, casoId } = useLocalSearchParams();
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [signing, setSigning] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
-  const [reportTitle, setReportTitle] = useState('');
+  const [laudoTitle, setLaudoTitle] = useState('');
   const [peritoId, setPeritoId] = useState<string | null>(null);
   const [savedLaudos, setSavedLaudos] = useState<Laudo[]>([]);
   const [caso, setCaso] = useState<Caso | null>(null);
+  const [evidencia, setEvidencia] = useState<Evidencia | null>(null);
+  const [ultimoLaudoCriado, setUltimoLaudoCriado] = useState<Laudo | null>(null);
 
+  // Alerta
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
@@ -55,101 +54,157 @@ export default function LaudoEvidenciaPage() {
     setAlertVisible(false);
   };
 
+
+  const loadSavedLaudos = async () => {
+    try {
+      if (evidenceId) {
+        const laudos = await buscarLaudosPorEvidencia(evidenceId as string);
+        setSavedLaudos(laudos);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar laudos:', error);
+      showCustomAlert('Erro', 'Erro ao buscar laudos da evidência.', 'error');
+    }
+  };
+
   useEffect(() => {
-    const loadPeritoInfo = async () => {
+    const carregarDadosIniciais = async () => {
       try {
+        if (!evidenceId) return;
+
         const userData = await AsyncStorage.getItem('@dentfy:usuario');
         if (userData) {
           const user: UserInfo = JSON.parse(userData);
           setPeritoId(user._id);
         }
-      } catch (error) {
-        console.error('Erro ao carregar informações do perito:', error);
-        showCustomAlert('Erro', 'Erro ao carregar informações do perito.', 'error');
-      }
-    };
-    loadPeritoInfo();
 
-    const loadCasoInfo = async () => {
-      setLoading(true);
-      try {
-        if (casoId) {
-          const data = await buscarCasoCompleto(casoId as string);
-          setCaso(data.caso);
-        }
+        setLoading(true);
+        const laudos = await buscarLaudosPorEvidencia(evidenceId as string);
+        setSavedLaudos(laudos);
       } catch (error) {
-        console.error('Erro ao carregar caso:', error);
-        showCustomAlert('Erro', 'Erro ao carregar informações do caso.', 'error');
+        console.error('Erro ao carregar dados iniciais:', error);
+        showCustomAlert('Erro', 'Erro ao carregar dados iniciais.', 'error');
       } finally {
         setLoading(false);
       }
     };
-    loadCasoInfo();
 
-    setSavedLaudos([
-      {
-        _id: 'laudo1',
-        titulo: 'Laudo Inicial da Evidência',
-        conteudo: 'Conteúdo do laudo inicial.',
-        caso: casoId as string,
-        peritoResponsavel: 'mock_perito_id_1',
-        isSigned: true,
-        dataCriacao: new Date().toISOString(),
-      },
-      {
-        _id: 'laudo2',
-        titulo: 'Laudo de Acompanhamento',
-        conteudo: 'Detalhes do acompanhamento da evidência.',
-        caso: casoId as string,
-        peritoResponsavel: 'mock_perito_id_1',
-        isSigned: false,
-        dataCriacao: new Date(Date.now() - 86400000).toISOString(),
-      },
-    ]);
-  }, [casoId]);
+    carregarDadosIniciais();
+  }, [evidenceId]);
 
   const handleSave = async () => {
-    if (!reportTitle.trim()) {
+    if (!laudoTitle.trim()) {
       showCustomAlert('Erro', 'O título do laudo não pode ser vazio.', 'error');
       return;
     }
-    if (!casoId || !peritoId) {
-      showCustomAlert('Erro', 'Informações de caso ou perito faltando.', 'error');
+
+    if (!evidenceId || !peritoId) {
+      showCustomAlert('Erro', 'Informações de evidência ou perito faltando.', 'error');
       return;
     }
 
     setSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    showCustomAlert('Sucesso', 'Laudo salvo com sucesso!', 'success');
-    setSaving(false);
-    setReportTitle('');
+    try {
+      const novoLaudo = await criarLaudo({
+        titulo: laudoTitle,
+        texto: laudoTitle,
+        evidence: evidenceId as string, // <- agora está certo
+        peritoResponsavel: peritoId,
+      });
+
+      setUltimoLaudoCriado(novoLaudo);
+      showCustomAlert('Sucesso', 'Laudo salvo com sucesso!', 'success');
+      setLaudoTitle('');
+      await loadSavedLaudos();
+    } catch (error) {
+      console.error('Erro ao salvar laudo:', error);
+      showCustomAlert('Erro', 'Erro ao salvar laudo.', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSign = async () => {
-    if (!reportTitle.trim()) {
-      showCustomAlert('Erro', 'O título do laudo não pode ser vazio para assinar.', 'error');
+    const laudo = ultimoLaudoCriado ?? savedLaudos[0];
+
+    if (!laudo) {
+      showCustomAlert('Erro', 'Nenhum laudo disponível para assinar.', 'error');
       return;
     }
+
+    if (laudo.isSigned) {
+      showCustomAlert('Aviso', 'Este laudo já está assinado.', 'warning');
+      return;
+    }
+
     setSigning(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    showCustomAlert('Sucesso', 'Laudo assinado com sucesso!', 'success');
-    setSigning(false);
+    try {
+      await assinarLaudo(laudo._id);
+      showCustomAlert('Sucesso', 'Laudo assinado com sucesso!', 'success');
+      await loadSavedLaudos();
+    } catch (error) {
+      console.error('Erro ao assinar laudo:', error);
+      showCustomAlert('Erro', 'Erro ao assinar laudo.', 'error');
+    } finally {
+      setSigning(false);
+    }
   };
 
   const handleGeneratePdf = async () => {
-    if (!reportTitle.trim()) {
-      showCustomAlert('Erro', 'Adicione um título para gerar o PDF do laudo.', 'error');
+    const laudo = ultimoLaudoCriado ?? savedLaudos[0];
+
+    if (!laudo) {
+      showCustomAlert('Erro', 'Nenhum laudo disponível para gerar PDF.', 'error');
       return;
     }
+
     setGeneratingPdf(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    showCustomAlert('Sucesso', 'PDF do laudo gerado com sucesso!', 'success');
-    setGeneratingPdf(false);
+    try {
+      await gerarPDFLaudo(laudo._id);
+      showCustomAlert('Sucesso', 'PDF gerado com sucesso! Baixando...', 'success');
+      await handleDownloadPdf(laudo._id);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      showCustomAlert('Erro', 'Erro ao gerar PDF.', 'error');
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
-  const handleDownloadPdf = (laudoId: string, laudoTitulo: string) => {
-    console.log(`Baixando PDF do laudo: ${laudoTitulo} (ID: ${laudoId})`);
-    showCustomAlert('Download', `Download do laudo "${laudoTitulo}" iniciado!`, 'info');
+
+  const handleDownloadPdf = async (laudoId: string) => {
+    try {
+      const url = `/api/laudos/${laudoId}/pdf`;
+      const fileUri = `${FileSystem.documentDirectory}laudo_${laudoId}.pdf`;
+
+      const response = await axios.get(url, {
+        responseType: 'blob',
+      });
+
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Data = reader.result?.toString().split(',')[1];
+
+        if (base64Data) {
+          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(fileUri);
+          } else {
+            Alert.alert('PDF salvo', `Arquivo salvo em ${fileUri}, mas não é possível abrir automaticamente.`);
+          }
+        } else {
+          Alert.alert('Erro', 'Não foi possível ler o PDF.');
+        }
+      };
+
+      reader.readAsDataURL(response.data);
+    } catch (error) {
+      console.error('Erro ao baixar o PDF:', error);
+      Alert.alert('Erro', 'Falha ao baixar o PDF.');
+    }
   };
 
   const handleCancel = () => {
@@ -172,40 +227,20 @@ export default function LaudoEvidenciaPage() {
         <View className="mb-6">
           <Body className="text-base text-dentfyTextSecondary mb-1">Título do Laudo *</Body>
           <TextInput
-            value={reportTitle}
-            onChangeText={setReportTitle}
+            value={laudoTitle}
+            onChangeText={setLaudoTitle}
             className="bg-dentfyGray800 text-white p-3 rounded-lg border border-dentfyGray700"
             placeholder="Digite o Título do Laudo..."
             placeholderTextColor="#6B7280"
           />
         </View>
 
-        <View className="bg-dentfyGray800 p-4 rounded-lg mb-6 border border-dentfyGray700">
-          <Body className="text-dentfyAmber font-bold mb-1">Caso:</Body>
-          {loading ? (
-            <ActivityIndicator size="small" color={colors.dentfyTextPrimary} />
-          ) : (
-            <>
-              {caso && (
-                <Body className="text-dentfyTextPrimary text-lg mb-2">
-                  <Body className="text-dentfyAmber font-bold">Título: </Body>
-                  {caso.titulo}
-                </Body>
-              )}
-              <Body className="text-dentfyTextPrimary">
-                <Body className="text-dentfyAmber font-bold">ID: </Body>
-                {casoId}
-              </Body>
-            </>
-          )}
-        </View>
-
-        {evidenciaId && (
+        {evidenceId && (
           <View className="bg-dentfyGray800 p-4 rounded-lg mb-6 border border-dentfyGray700">
             <Body className="text-dentfyAmber font-bold mb-1">Evidência:</Body>
             <Body className="text-dentfyTextPrimary">
               <Body className="text-dentfyAmber font-bold">ID da Evidência: </Body>
-              {evidenciaId}
+              {evidenceId}
             </Body>
             <Body className="text-dentfyTextSecondary text-sm mt-2">
               Laudo específico para esta evidência
@@ -231,8 +266,8 @@ export default function LaudoEvidenciaPage() {
 
           <TouchableOpacity
             onPress={handleSign}
-            disabled={saving || signing || generatingPdf || !reportTitle.trim()}
-            className={saving || signing || generatingPdf || !reportTitle.trim() ? "flex-row items-center justify-center w-4/5 h-12 rounded-lg bg-dentfyMediumBlueDisabled mb-5" : "flex-row items-center justify-center w-4/5 h-12 rounded-lg bg-[#9E27FE] mb-5"}
+            disabled={saving || signing || generatingPdf || !(ultimoLaudoCriado ?? savedLaudos[0])}
+            className={saving || signing || generatingPdf || !laudoTitle.trim() ? "flex-row items-center justify-center w-4/5 h-12 rounded-lg bg-dentfyMediumBlueDisabled mb-5" : "flex-row items-center justify-center w-4/5 h-12 rounded-lg bg-[#9E27FE] mb-5"}
           >
             {signing ? (
               <ActivityIndicator size="small" color="white" />
@@ -246,8 +281,8 @@ export default function LaudoEvidenciaPage() {
 
           <TouchableOpacity
             onPress={handleGeneratePdf}
-            disabled={saving || signing || generatingPdf || !reportTitle.trim()}
-            className={saving || signing || generatingPdf || !reportTitle.trim() ? "flex-row items-center justify-center w-4/5 h-12 rounded-lg bg-dentfyGray700" : "flex-row items-center justify-center w-4/5 h-12 rounded-lg bg-dentfyGray800 border border-dentfyGray700"}
+            disabled={saving || signing || generatingPdf || savedLaudos.length === 0}
+            className={saving || signing || generatingPdf || !laudoTitle.trim() ? "flex-row items-center justify-center w-4/5 h-12 rounded-lg bg-dentfyGray700" : "flex-row items-center justify-center w-4/5 h-12 rounded-lg bg-dentfyGray800 border border-dentfyGray700"}
           >
             {generatingPdf ? (
               <ActivityIndicator size="small" color="white" />
@@ -276,7 +311,7 @@ export default function LaudoEvidenciaPage() {
               {savedLaudos.map((laudo) => (
                 <TouchableOpacity
                   key={laudo._id}
-                  onPress={() => handleDownloadPdf(laudo._id, laudo.titulo)}
+                  onPress={() => handleDownloadPdf(laudo._id)}
                   className="bg-dentfyGray800/30 p-4 rounded-lg border border-dentfyGray700/30 flex-row items-center justify-between"
                 >
                   <View className="flex-row items-center">
@@ -286,7 +321,7 @@ export default function LaudoEvidenciaPage() {
                         {laudo.titulo}
                       </Body>
                       <Body className="text-dentfyTextSecondary text-sm mt-1">
-                        {`Criado em: ${new Date(laudo.dataCriacao).toLocaleDateString('pt-BR')}`}
+                        {`Criado em: ${new Date(laudo.createdAt).toLocaleDateString('pt-BR')}`}
                       </Body>
                       {laudo.isSigned && (
                         <View className="mt-1 flex-row items-center">

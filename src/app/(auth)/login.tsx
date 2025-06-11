@@ -34,7 +34,7 @@ export default function Login() {
 
     // Verifica se o caractere está em maiúsculo
     const isUpperCase = lastChar === lastChar.toUpperCase() && lastChar !== lastChar.toLowerCase();
-    
+
     // Se o caractere anterior existir e for minúsculo, mas o atual for maiúsculo,
     // provavelmente o caps lock foi ativado
     if (text.length > 1) {
@@ -93,7 +93,7 @@ export default function Login() {
     try {
       console.log('=== INÍCIO DO LOGIN ===');
       console.log('Tentando fazer login com CPF:', cleanedCpf);
-      
+
       const response = await api.post("/api/users/login", {
         cpf: cleanedCpf,
         password,
@@ -109,9 +109,11 @@ export default function Login() {
         console.log('Login bem sucedido, token recebido');
         const token = response.data.token;
         const userData = response.data.user;
-        
-        // Primeiro salva os dados do usuário
-        await AsyncStorage.setItem("@dentfy:usuario", JSON.stringify({
+
+        console.log('Dados do usuário retornados pelo backend:', userData);
+
+        const userToStore = {
+           _id: userData._id || userData.id,
           nome: userData.name,
           cargo:
             userData.role === "admin"
@@ -119,11 +121,13 @@ export default function Login() {
               : userData.role === "perito"
                 ? "Perito Criminal"
                 : "Assistente",
-        }));
-        
-        // Depois faz o login usando o contexto
+        };
+
+        await AsyncStorage.setItem("@dentfy:usuario", JSON.stringify(userToStore));
+        console.log('Usuário salvo no AsyncStorage:', userToStore);
+
         await signIn(token);
-        
+
         console.log('Login concluído com sucesso');
         showToast('Login realizado com sucesso!', 'success');
       } else {
@@ -132,13 +136,13 @@ export default function Login() {
       }
     } catch (error: any) {
       console.error('Erro durante o login:', error);
-      
+
       // Tratamento específico de erros
       if (error.response) {
         // Erro com resposta do servidor
         const status = error.response.status;
         const message = error.response.data?.message || 'Erro ao fazer login';
-        
+
         if (status === 401) {
           showToast('Email ou senha incorretos', 'error');
         } else if (status === 404) {
