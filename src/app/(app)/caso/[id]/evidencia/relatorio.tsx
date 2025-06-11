@@ -235,26 +235,6 @@ export default function LaudoEvidenciaPage() {
           />
         </View>
 
-        <View className="bg-dentfyGray800 p-4 rounded-lg mb-6 border border-dentfyGray700">
-          <Body className="text-dentfyAmber font-bold mb-1">Caso:</Body>
-          {loading ? (
-            <ActivityIndicator size="small" color={colors.dentfyTextPrimary} />
-          ) : (
-            <>
-              {caso && (
-                <Body className="text-dentfyTextPrimary text-lg mb-2">
-                  <Body className="text-dentfyAmber font-bold">Título: </Body>
-                  {caso.titulo}
-                </Body>
-              )}
-              <Body className="text-dentfyTextPrimary">
-                <Body className="text-dentfyAmber font-bold">ID: </Body>
-                {casoId}
-              </Body>
-            </>
-          )}
-        </View>
-
         {evidenceId && (
           <View className="bg-dentfyGray800 p-4 rounded-lg mb-6 border border-dentfyGray700">
             <Body className="text-dentfyAmber font-bold mb-1">Evidência:</Body>
