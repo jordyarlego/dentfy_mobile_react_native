@@ -1,3 +1,4 @@
+import { AxiosError } from "axios";
 import api from "./api";
 
 export interface Evidencia {
@@ -39,6 +40,12 @@ export interface CriarEvidenciaDTO {
 export interface AtualizarEvidenciaDTO
   extends Partial<Omit<Evidencia, "_id">> {}
 
+interface ApiError {
+  message: string;
+  status?: number;
+  data?: any;
+}
+
 // Criar nova evidência
 export const criarEvidencia = async (
   dados: CriarEvidenciaDTO
@@ -62,11 +69,6 @@ export const criarEvidencia = async (
         formData.append(key, String(value));
       }
     });
-
-    // Log do FormData
-    for (let [key, value] of formData.entries()) {
-      console.log(`FormData - ${key}:`, value);
-    }
 
     // Tratar imagem
     if (dados.imagem?.uri) {
@@ -94,7 +96,12 @@ export const criarEvidencia = async (
 
     return response.data;
   } catch (error) {
-    console.error("Erro detalhado:", error.response?.data || error);
+    const err = error as AxiosError;
+    console.error("Erro detalhado:", {
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data,
+    } as ApiError);
     throw error;
   }
 };
