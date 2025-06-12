@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Modal, TouchableOpacity, TextInput, Text, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Vitima } from '../../types/caso';
+import { colors } from '../../theme/colors'; // Corrigido para caminho relativo
 
 interface ModalNovaVitimaProps {
   visible: boolean;
@@ -17,7 +18,6 @@ export default function ModalNovaVitima({ visible, onClose, onSave }: ModalNovaV
     etnia: '',
     endereco: '',
     cpf: '',
-    nic: '',
   });
 
   const handleChange = (field: keyof Omit<Vitima, '_id'>, value: string) => {
@@ -33,7 +33,6 @@ export default function ModalNovaVitima({ visible, onClose, onSave }: ModalNovaV
       'etnia',
       'endereco',
       'cpf',
-      'nic',
     ];
 
     const camposFaltantes = camposObrigatorios.filter(
@@ -56,7 +55,6 @@ export default function ModalNovaVitima({ visible, onClose, onSave }: ModalNovaV
       etnia: '',
       endereco: '',
       cpf: '',
-      nic: '',
     });
   };
 
@@ -67,57 +65,56 @@ export default function ModalNovaVitima({ visible, onClose, onSave }: ModalNovaV
       transparent={true}
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-black/50 justify-end">
-        <View className="bg-gray-900 rounded-t-3xl p-4">
+      <View className="flex-1 bg-overlayBlack justify-end">
+        <View className="bg-dentfyGray900 rounded-t-3xl p-4">
           <View className="flex-row justify-between items-center mb-6">
-            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#F59E0B' }}>
+            <Text className="text-2xl font-bold text-dentfyAmber">
               Nova Vítima
             </Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color="#D1D5DB" />
+              <Ionicons name="close" size={24} color={colors.dentfyTextSecondary} />
             </TouchableOpacity>
           </View>
 
           <View className="space-y-4">
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Nome *</Text>
+              <Text className="text-base text-dentfyTextPrimary mb-1">Nome *</Text>
               <TextInput
                 value={formData.nome}
                 onChangeText={(value) => handleChange('nome', value)}
-                className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
+                className="bg-dentfyGray800 text-dentfyTextPrimary p-3 rounded-lg border border-dentfyBorderGray"
                 placeholder="Digite o nome completo"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.dentfyTextSecondary}
               />
             </View>
 
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Data de Nascimento *</Text>
+              <Text className="text-base text-dentfyTextPrimary mb-1">Data de Nascimento *</Text>
               <TextInput
                 value={formData.dataNascimento}
                 onChangeText={(value) => handleChange('dataNascimento', value)}
-                className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
+                className="bg-dentfyGray800 text-dentfyTextPrimary p-3 rounded-lg border border-dentfyBorderGray"
                 placeholder="DD/MM/AAAA"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.dentfyTextSecondary}
                 keyboardType="numeric"
               />
             </View>
 
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Sexo *</Text>
+              <Text className="text-base text-dentfyTextPrimary mb-1">Sexo *</Text>
               <View className="flex-row gap-4">
                 <TouchableOpacity
                   onPress={() => handleChange('sexo', 'masculino')}
                   className={`flex-1 p-3 rounded-lg border ${
                     formData.sexo === 'masculino'
-                      ? 'bg-amber-600 border-amber-500'
-                      : 'bg-gray-800 border-gray-700'
+                      ? 'bg-dentfyAmber border-dentfyAmber'
+                      : 'bg-dentfyGray800 border-dentfyBorderGray'
                   }`}
                 >
                   <Text
-                    style={{
-                      textAlign: 'center',
-                      color: formData.sexo === 'masculino' ? '#FFFFFF' : '#D1D5DB',
-                    }}
+                    className={`text-center ${
+                      formData.sexo === 'masculino' ? 'text-dentfyTextPrimary' : 'text-dentfyTextSecondary'
+                    }`}
                   >
                     Masculino
                   </Text>
@@ -126,15 +123,14 @@ export default function ModalNovaVitima({ visible, onClose, onSave }: ModalNovaV
                   onPress={() => handleChange('sexo', 'feminino')}
                   className={`flex-1 p-3 rounded-lg border ${
                     formData.sexo === 'feminino'
-                      ? 'bg-amber-600 border-amber-500'
-                      : 'bg-gray-800 border-gray-700'
+                      ? 'bg-dentfyAmber border-dentfyAmber'
+                      : 'bg-dentfyGray800 border-dentfyBorderGray'
                   }`}
                 >
                   <Text
-                    style={{
-                      textAlign: 'center',
-                      color: formData.sexo === 'feminino' ? '#FFFFFF' : '#D1D5DB',
-                    }}
+                    className={`text-center ${
+                      formData.sexo === 'feminino' ? 'text-dentfyTextPrimary' : 'text-dentfyTextSecondary'
+                    }`}
                   >
                     Feminino
                   </Text>
@@ -143,65 +139,55 @@ export default function ModalNovaVitima({ visible, onClose, onSave }: ModalNovaV
             </View>
 
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Etnia *</Text>
+              <Text className="text-base text-dentfyTextPrimary mb-1">Etnia *</Text>
               <TextInput
                 value={formData.etnia}
                 onChangeText={(value) => handleChange('etnia', value)}
-                className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
+                className="bg-dentfyGray800 text-dentfyTextPrimary p-3 rounded-lg border border-dentfyBorderGray"
                 placeholder="Digite a etnia"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.dentfyTextSecondary}
               />
             </View>
 
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>Endereço *</Text>
+              <Text className="text-base text-dentfyTextPrimary mb-1">Endereço *</Text>
               <TextInput
                 value={formData.endereco}
                 onChangeText={(value) => handleChange('endereco', value)}
-                className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
+                className="bg-dentfyGray800 text-dentfyTextPrimary p-3 rounded-lg border border-dentfyBorderGray"
                 placeholder="Digite o endereço completo"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.dentfyTextSecondary}
                 multiline
                 numberOfLines={2}
               />
             </View>
 
             <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>CPF *</Text>
+              <Text className="text-base text-dentfyTextPrimary mb-1">CPF *</Text>
               <TextInput
                 value={formData.cpf}
                 onChangeText={(value) => handleChange('cpf', value)}
-                className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
+                className="bg-dentfyGray800 text-dentfyTextPrimary p-3 rounded-lg border border-dentfyBorderGray"
                 placeholder="Digite o CPF"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.dentfyTextSecondary}
                 keyboardType="numeric"
               />
             </View>
 
-            <View>
-              <Text style={{ fontSize: 16, color: '#D1D5DB', marginBottom: 4 }}>NIC *</Text>
-              <TextInput
-                value={formData.nic}
-                onChangeText={(value) => handleChange('nic', value)}
-                className="bg-gray-800 text-white p-3 rounded-lg border border-gray-700"
-                placeholder="Digite o NIC"
-                placeholderTextColor="#6B7280"
-              />
-            </View>
           </View>
 
           <View className="flex-row gap-4 mt-6">
             <TouchableOpacity
               onPress={onClose}
-              className="flex-1 p-4 bg-gray-800 rounded-lg border border-gray-700"
+              className="flex-1 p-4 bg-dentfyGray800 rounded-lg border border-dentfyBorderGray"
             >
-              <Text style={{ textAlign: 'center', color: '#D1D5DB' }}>Cancelar</Text>
+              <Text className="text-center text-dentfyTextSecondary">Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSubmit}
-              className="flex-1 p-4 bg-amber-600 rounded-lg"
+              className="flex-1 p-4 bg-dentfyAmber rounded-lg"
             >
-              <Text style={{ textAlign: 'center', color: '#FFFFFF' }}>Salvar</Text>
+              <Text className="text-center text-dentfyTextPrimary">Salvar</Text>
             </TouchableOpacity>
           </View>
         </View>

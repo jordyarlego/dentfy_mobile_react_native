@@ -1,8 +1,7 @@
 import React from 'react';
 import { Text, TextProps } from 'react-native';
-import { typography } from '../styles/theme';
 
-type TypographyVariant = 'heading' | 'body';
+type TypographyVariant = 'heading' | 'body' | 'caption';
 type TypographySize = 'large' | 'medium' | 'small';
 
 interface TypographyProps extends TextProps {
@@ -41,10 +40,17 @@ export function Body({ size = 'medium', className = '', ...props }: TypographyPr
   );
 }
 
-export const ButtonText = ({ style, ...props }: TextProps) => (
-  <Text style={[typography.button, style]} {...props} />
-);
+export function Caption({ size = 'small', className = '', ...props }: TypographyProps) {
+  const sizeClasses = {
+    small: 'text-xs',
+    medium: 'text-sm',
+    large: 'text-base',
+  };
 
-export const Caption = ({ style, ...props }: TextProps) => (
-  <Text style={[typography.caption, style]} {...props} />
-); 
+  return (
+    <Text
+      className={`font-normal ${sizeClasses[size]} ${className}`}
+      {...props}
+    />
+  );
+} 

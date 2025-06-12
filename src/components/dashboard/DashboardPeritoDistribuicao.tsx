@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
+import { colors } from '../../theme/colors';
 
 interface Props {
   casosEmAndamento: number;
@@ -15,68 +16,69 @@ export default function DashboardPeritoDistribuicao({
   casosArquivados,
   isLoading,
 }: Props) {
-  const screenWidth = Dimensions.get('window').width - 32; // 32 = padding do container
+  const screenWidth = Dimensions.get('window').width;
+  const isSmallScreen = screenWidth < 400;
+  
+  // Ajusta o tamanho baseado na tela
+  const chartWidth = isSmallScreen ? screenWidth - 32 : screenWidth - 64;
+  const chartHeight = isSmallScreen ? 200 : 250;
 
   const data = [
     {
       name: 'Em Andamento',
       quantidade: casosEmAndamento,
-      color: '#eab308', // yellow-500
-      legendFontColor: '#fef3c7', // amber-100
-      legendFontSize: 12,
+      color: colors.dentfyAmber,
+      legendFontColor: colors.dentfyTextSecondary,
+      legendFontSize: isSmallScreen ? 10 : 12,
     },
     {
       name: 'Finalizados',
       quantidade: casosFinalizados,
-      color: '#22c55e', // green-500
-      legendFontColor: '#fef3c7',
-      legendFontSize: 12,
+      color: colors.dentfyCyan,
+      legendFontColor: colors.dentfyTextSecondary,
+      legendFontSize: isSmallScreen ? 10 : 12,
     },
     {
       name: 'Arquivados',
       quantidade: casosArquivados,
-      color: '#a855f7', // purple-500
-      legendFontColor: '#fef3c7',
-      legendFontSize: 12,
+      color: colors.dentfyGray500,
+      legendFontColor: colors.dentfyTextSecondary,
+      legendFontSize: isSmallScreen ? 10 : 12,
     },
   ];
 
   if (isLoading) {
     return (
-      <View className="bg-[#0E1A26] p-4 rounded-lg border border-cyan-900/30">
-        <Text className="text-base font-semibold text-amber-100 mb-3">
-          Distribuição dos Casos
-        </Text>
-        <View className="h-[200px] items-center justify-center">
-          <Text className="text-amber-100/70">Carregando...</Text>
+      <View className={`h-[${chartHeight}px] items-center justify-center`}>
+        <View className="w-16 h-16 bg-dentfyAmber/20 rounded-full items-center justify-center mb-3 animate-pulse">
+          <Text className="text-dentfyAmber text-2xl">📊</Text>
         </View>
+        <Text className="text-dentfyTextSecondary">Carregando dados...</Text>
       </View>
     );
   }
 
   return (
-    <View className="bg-[#0E1A26] p-4 rounded-lg border border-cyan-900/30">
-      <Text className="text-base font-semibold text-amber-100 mb-3">
-        Distribuição dos Casos
-      </Text>
+    <View className="items-center">
       <PieChart
         data={data}
-        width={screenWidth}
-        height={200}
+        width={chartWidth}
+        height={chartHeight}
         chartConfig={{
-          backgroundColor: '#0E1A26',
-          backgroundGradientFrom: '#0E1A26',
-          backgroundGradientTo: '#0E1A26',
-          color: (opacity = 1) => `rgba(254, 243, 199, ${opacity})`, // amber-100
-          labelColor: (opacity = 1) => `rgba(254, 243, 199, ${opacity})`,
+          backgroundColor: 'transparent',
+          backgroundGradientFrom: 'transparent',
+          backgroundGradientTo: 'transparent',
+          color: (opacity = 1) => `${colors.dentfyTextPrimary}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`,
+          labelColor: (opacity = 1) => `${colors.dentfyTextSecondary}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`,
           style: {
             borderRadius: 16,
           },
         }}
         accessor="quantidade"
         backgroundColor="transparent"
-        paddingLeft="15"
-        absolute
+        paddingLeft={isSmallScreen ? "10" : "15"}
+        hasLegend={true}
+        avoidFalseZero={true}
       />
     </View>
   );

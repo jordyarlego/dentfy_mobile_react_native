@@ -2,116 +2,132 @@ import React from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Heading, Body, Caption } from './Typography';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../theme/colors';
 
-export interface Caso {
+// Tipo para a API
+export type CasoStatusAPI = 'Em andamento' | 'Finalizado' | 'Arquivado';
+
+// Tipo para o frontend
+export type CasoStatusFrontend = 'em_andamento' | 'concluido' | 'arquivado';
+
+export interface CasoData {
   _id: string;
   titulo: string;
+  descricao: string;
   responsavel: string;
+  status: CasoStatusAPI;
+  tipo: 'Vitima' | 'Desaparecido' | 'Outro';
   dataAbertura: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  descricao?: string;
-  tipo?: string;
-  sexo?: string;
-  local?: string;
+  dataFechamento?: string;
+  sexo: 'Masculino' | 'Feminino' | 'Outro';
+  local: string;
+}
+
+// Função para converter status da API para o frontend
+export function convertStatusToFrontend(status: CasoStatusAPI): CasoStatusFrontend {
+  switch (status) {
+    case 'Em andamento':
+      return 'em_andamento';
+    case 'Finalizado':
+      return 'concluido';
+    case 'Arquivado':
+      return 'arquivado';
+    default:
+      return 'em_andamento';
+  }
+}
+
+// Função para converter status do frontend para a API
+export function convertStatusToAPI(status: CasoStatusFrontend): CasoStatusAPI {
+  switch (status) {
+    case 'em_andamento':
+      return 'Em andamento';
+    case 'concluido':
+      return 'Finalizado';
+    case 'arquivado':
+      return 'Arquivado';
+    default:
+      return 'Em andamento';
+  }
 }
 
 interface CaseCardProps {
-  title: string;
-  patientName: string;
-  date: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  description?: string;
-  type?: string;
-  location?: string;
+  caso: CasoData;
   onPress: () => void;
 }
 
-const getStatusStyle = (status: CaseCardProps['status']) => {
-  switch (status) {
-    case 'completed':
-      return 'bg-green-500/10 text-green-400 border-green-500/30';
-    case 'in_progress':
-      return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
-    case 'pending':
-      return 'bg-red-500/10 text-red-400 border-red-500/30';
-    default:
-      return 'bg-gray-500/10 text-gray-400 border-gray-500/30';
-  }
-};
-
-const getStatusText = (status: CaseCardProps['status']) => {
-  switch (status) {
-    case 'completed':
-      return 'Concluído';
-    case 'in_progress':
-      return 'Em Andamento';
-    case 'pending':
-      return 'Pendente';
-    default:
-      return 'Desconhecido';
-  }
-};
-
-export const CaseCard = ({ 
-  title, 
-  patientName, 
-  date, 
-  status, 
-  description,
-  type,
-  location,
-  onPress 
-}: CaseCardProps) => {
+export const CaseCard = ({ caso, onPress }: CaseCardProps) => {
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       onPress={onPress}
-      className="bg-gray-800/80 rounded-lg p-4 mx-4 my-2 border border-gray-700 active:bg-gray-700/80"
+      className="bg-dentfyGray800/80 rounded-lg p-4 mx-4 my-2 border border-dentfyBorderGray active:bg-dentfyGray700/80"
     >
       <View className="flex-row justify-between items-start mb-2">
         <View className="flex-1 mr-2">
-          <Heading size="small" className="text-gray-100 mb-1">
-            {title}
+          <Heading 
+            size="small" 
+            className="text-dentfyTextPrimary mb-1"
+            numberOfLines={2}
+          >
+            {caso.titulo}
           </Heading>
-          {type && (
-            <View className="flex-row items-center mb-1">
-              <Ionicons name="medical-outline" size={14} color="#9CA3AF" />
-              <Caption className="text-gray-400 ml-1">{type}</Caption>
+          <View className="flex-row items-center mb-1">
+            <View className="px-3 py-1 rounded-full border bg-dentfyGray800/50 border-dentfyBorderGray">
+              <Caption className="text-xs font-semibold text-dentfyAmber">
+                {caso.tipo}
+              </Caption>
             </View>
-          )}
+          </View>
         </View>
-        <View className={`px-3 py-1 rounded-full border ${getStatusStyle(status)}`}>
-          <Caption className="text-xs font-medium">
-            {getStatusText(status)}
+
+        <View className={`px-3 py-1 rounded-full border ${
+          caso.status === 'Em andamento' ? 'bg-dentfyCyan/20 text-dentfyCyan border-dentfyCyan' :
+          caso.status === 'Finalizado' ? 'bg-dentfyAmber/20 text-dentfyAmber border-dentfyAmber' :
+          'bg-errorRed/20 text-errorRed border-errorRed'
+        }`}>
+          <Caption className="text-xs font-semibold text-current">
+            {caso.status}
           </Caption>
         </View>
       </View>
-      
+
       <View className="flex-row items-center mb-2">
-        <Ionicons name="person-outline" size={14} color="#9CA3AF" />
-        <Body className="text-gray-300 ml-1">
-          {patientName}
+        <Ionicons name="person-outline" size={14} color={colors.dentfyTextSecondary} />
+        <Body 
+          className="text-dentfyTextPrimary ml-1 flex-1" 
+          numberOfLines={1}
+        >
+          {caso.responsavel}
         </Body>
       </View>
 
-      {location && (
-        <View className="flex-row items-center mb-2">
-          <Ionicons name="location-outline" size={14} color="#9CA3AF" />
-          <Caption className="text-gray-400 ml-1">{location}</Caption>
-        </View>
-      )}
-      
-      {description && (
-        <View className="mt-2 pt-2 border-t border-gray-700">
-          <Caption className="text-gray-400">{description}</Caption>
+      <View className="flex-row items-center mb-2">
+        <Ionicons name="location-outline" size={14} color={colors.dentfyTextSecondary} />
+        <Caption 
+          className="text-dentfyTextSecondary ml-1 flex-1" 
+          numberOfLines={1}
+        >
+          {caso.local}
+        </Caption>
+      </View>
+
+      {caso.descricao && (
+        <View className="mt-2 pt-2 border-t border-dentfyBorderGray">
+          <Caption 
+            className="text-dentfyTextSecondary" 
+            numberOfLines={2}
+          >
+            {caso.descricao}
+          </Caption>
         </View>
       )}
 
-      <View className="flex-row items-center mt-2 pt-2 border-t border-gray-700">
-        <Ionicons name="calendar-outline" size={14} color="#9CA3AF" />
-        <Caption className="text-gray-400 ml-1">
-          {new Date(date).toLocaleDateString('pt-BR')}
+      <View className="flex-row items-center mt-2 pt-2 border-t border-dentfyBorderGray">
+        <Ionicons name="calendar-outline" size={14} color={colors.dentfyTextSecondary} />
+        <Caption className="text-dentfyTextSecondary ml-1">
+          {new Date(caso.dataAbertura).toLocaleDateString('pt-BR')}
         </Caption>
       </View>
     </TouchableOpacity>
   );
-}; 
+};

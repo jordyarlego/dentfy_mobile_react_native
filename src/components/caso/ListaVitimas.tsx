@@ -1,105 +1,189 @@
-import React from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import React, { useState } from 'react';
+import { View, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { Heading, Body } from '../Typography';
+import { colors } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
-import type { Vitima } from '../../types/caso';
+import { buscarVitimasPorCaso } from '../../services/api_vitima';
+import type { Vitima } from '../../services/api_vitima';
 
-interface ListaVitimasProps {
-  vitimas: Vitima[];
-  onAdd: () => void;
-  onEdit: (vitima: Vitima) => void;
-  onDelete: (vitima: Vitima) => void;
+export interface ListaVitimasProps {
+  casoId: string;
 }
 
-export default function ListaVitimas({
-  vitimas,
-  onAdd,
-  onEdit,
-  onDelete,
-}: ListaVitimasProps) {
+export default function ListaVitimas({ casoId }: ListaVitimasProps) {
+  const router = useRouter();
+  const [vitimas, setVitimas] = useState<Vitima[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const carregarVitimas = async () => {
+    try {
+      setLoading(true);
+      const data = await buscarVitimasPorCaso(casoId);
+      setVitimas(data);
+    } catch (error) {
+      console.error('Erro ao carregar vítimas do backend:', error);
+      setVitimas([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      carregarVitimas();
+    }, [casoId])
+  );
+
+  const handleAddVitima = () => {
+    router.push(`/caso/${casoId}/vitima/nova`);
+  };
+
+  const handleVitimaPress = (vitimaId: string) => {
+    router.push(`/caso/${casoId}/vitima/${vitimaId}`);
+  };
+
+  const formatarCPF = (cpf: string) => {
+    if (!cpf) return '';
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  };
+
+  const formatarData = (data: string) => {
+    if (!data) return '';
+    try {
+      const date = new Date(data);
+      return date.toLocaleDateString('pt-BR');
+    } catch {
+      return data;
+    }
+  };
+
   return (
     <View className="mb-6">
       <View className="flex-row justify-between items-center mb-4">
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#F59E0B' }}>
+        <Heading size="medium" className="text-dentfyAmber">
           Vítimas
-        </Text>
+        </Heading>
         <TouchableOpacity
-          onPress={onAdd}
-          className="flex-row items-center gap-2 px-4 py-2 bg-amber-600 rounded-lg"
+          onPress={handleAddVitima}
+          className="p-2 rounded-full bg-dentfyAmber/10"
         >
-          <Ionicons name="add" size={20} color="#FFFFFF" />
-          <Text style={{ fontSize: 16, color: '#FFFFFF' }}>Nova Vítima</Text>
+          <Ionicons name="add" size={24} color={colors.dentfyAmber} />
         </TouchableOpacity>
       </View>
-
-      <View className="space-y-4">
-        {vitimas.map((vitima) => (
-          <View
-            key={vitima._id}
-            className="bg-gray-800/30 p-4 rounded-lg border border-gray-700"
-          >
-            <View className="flex-row justify-between items-center mb-2">
-              <View>
-                <Text style={{ fontSize: 16, fontWeight: '500', color: '#F3F4F6' }}>
-                  {vitima.nome}
-                </Text>
-                <Text style={{ fontSize: 14, color: '#9CA3AF' }}>
-                  {new Date(vitima.dataNascimento).toLocaleDateString('pt-BR')}
-                </Text>
-              </View>
-              <View className="flex-row gap-2">
-                <TouchableOpacity
-                  onPress={() => onEdit(vitima)}
-                  className="p-2"
-                >
-                  <Ionicons name="pencil" size={20} color="#9CA3AF" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => onDelete(vitima)}
-                  className="p-2"
-                >
-                  <Ionicons name="trash" size={20} color="#EF4444" />
-                </TouchableOpacity>
-              </View>
+      
+      {loading ? (
+        <View className="bg-dentfyGray800/30 p-4 rounded-lg items-center justify-center min-h-[100px]">
+          <ActivityIndicator size="large" color={colors.dentfyAmber} />
+          <Body className="text-dentfyTextPrimary text-center mt-2">
+            Carregando vítimas...
+          </Body>
+        </View>
+      ) : vitimas.length === 0 ? (
+        <View className="bg-dentfyGray800/30 p-4 rounded-lg">
+          <Body className="text-dentfyTextPrimary text-center">
+            Nenhuma vítima registrada
+          </Body>
+        </View>
+      ) : (
+        <View className="space-y-4">
+          {vitimas.map((vitima, index) => (
+            <View key={vitima._id}>
+              <TouchableOpacity
+                onPress={() => handleVitimaPress(vitima._id)}
+                className="bg-dentfyGray800/30 p-4 rounded-lg border border-dentfyGray700/30 active:bg-dentfyGray800/50"
+              >
+                <View className="flex-row justify-between items-start">
+                  <View className="flex-1">
+                    <Body className="text-dentfyTextPrimary font-semibold text-lg mb-2">
+                      {vitima.nomeCompleto}
+                    </Body>
+                    
+                    <View className="space-y-1">
+                      <View className="flex-row items-center">
+                        <Ionicons name="card-outline" size={16} color={colors.dentfyTextSecondary} />
+                        <Body className="text-dentfyTextSecondary text-sm ml-2">
+                          CPF: {formatarCPF(vitima.cpf)}
+                        </Body>
+                      </View>
+                      
+                      <View className="flex-row items-center">
+                        <Ionicons name="calendar-outline" size={16} color={colors.dentfyTextSecondary} />
+                        <Body className="text-dentfyTextSecondary text-sm ml-2">
+                          Nascimento: {formatarData(vitima.dataNascimento)}
+                        </Body>
+                      </View>
+                      
+                      <View className="flex-row items-center">
+                        <Ionicons name="person-outline" size={16} color={colors.dentfyTextSecondary} />
+                        <Body className="text-dentfyTextSecondary text-sm ml-2">
+                          Sexo: {vitima.sexo}
+                        </Body>
+                      </View>
+                      
+                      <View className="flex-row items-center">
+                        <Ionicons name="people-outline" size={16} color={colors.dentfyTextSecondary} />
+                        <Body className="text-dentfyTextSecondary text-sm ml-2">
+                          Etnia: {vitima.etnia}
+                        </Body>
+                      </View>
+                      
+                      {vitima.endereco && (
+                        <View className="flex-row items-start">
+                          <Ionicons name="location-outline" size={16} color={colors.dentfyTextSecondary} style={{ marginTop: 2 }} />
+                          <Body className="text-dentfyTextSecondary text-sm ml-2 flex-1">
+                            {vitima.endereco}
+                          </Body>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  
+                  <View className="ml-3">
+                    <Ionicons 
+                      name="chevron-forward" 
+                      size={20} 
+                      color={colors.dentfyTextSecondary} 
+                    />
+                  </View>
+                </View>
+              </TouchableOpacity>
+              
+              {/* Separador âmbar entre cards (exceto no último) */}
+              {index < vitimas.length - 1 && (
+                <View className="h-0.5 bg-dentfyAmber/20 mx-4 mt-4 rounded-full" />
+              )}
             </View>
+          ))}
+        </View>
+      )}
 
-            <View className="flex-row flex-wrap gap-2">
-              <View className="bg-gray-700/50 px-2 py-1 rounded">
-                <Text style={{ fontSize: 12, color: '#D1D5DB' }}>
-                  {vitima.sexo === 'masculino' ? 'Masculino' : 'Feminino'}
-                </Text>
-              </View>
-              <View className="bg-gray-700/50 px-2 py-1 rounded">
-                <Text style={{ fontSize: 12, color: '#D1D5DB' }}>
-                  {vitima.etnia}
-                </Text>
-              </View>
-              <View className="bg-gray-700/50 px-2 py-1 rounded">
-                <Text style={{ fontSize: 12, color: '#D1D5DB' }}>
-                  {vitima.cpf}
-                </Text>
-              </View>
-              <View className="bg-gray-700/50 px-2 py-1 rounded">
-                <Text style={{ fontSize: 12, color: '#D1D5DB' }}>
-                  {vitima.nic}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={{ fontSize: 14, color: '#D1D5DB', marginTop: 8 }}>
-              {vitima.endereco}
-            </Text>
+      {/* Modal de Feedback */}
+      <Modal visible={isSubmitting} transparent animationType="fade">
+        <View className="flex-1 bg-black/50 items-center justify-center">
+          <View className="bg-dentfyGray800 p-8 rounded-lg items-center min-w-[200px]">
+            {isSaved ? (
+              <>
+                <View className="w-16 h-16 bg-green-500 rounded-full items-center justify-center mb-4">
+                  <Ionicons name="checkmark" size={40} color="white" />
+                </View>
+                <Body className="text-dentfyTextPrimary text-center text-lg font-medium">
+                  Vítima salva com sucesso!
+                </Body>
+              </>
+            ) : (
+              <>
+                <ActivityIndicator size="large" color={colors.dentfyAmber} />
+                <Body className="text-dentfyTextPrimary mt-4 text-center text-lg">
+                  Salvando vítima...
+                </Body>
+              </>
+            )}
           </View>
-        ))}
-
-        {vitimas.length === 0 && (
-          <View className="items-center justify-center py-8">
-            <Ionicons name="person" size={48} color="#6B7280" />
-            <Text style={{ fontSize: 16, color: '#9CA3AF', marginTop: 8 }}>
-              Nenhuma vítima cadastrada
-            </Text>
-          </View>
-        )}
-      </View>
+        </View>
+      </Modal>
     </View>
   );
-} 
+}

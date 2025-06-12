@@ -1,7 +1,18 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import type { Usuario } from '../../types/usuario';
+import React, { useEffect, useState } from "react";
+import {
+  Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+  Alert,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { GetUsuarioById, DeleteUsuario } from "../../services/api_usuario";
+import { useToast } from "../../contexts/ToastContext";
+import type { Usuario } from "../../types/usuario";
+import ModalEdicaoUsuario from "./ModalEdicaoUsuario";
 
 interface ModalVisualizacaoUsuarioProps {
   visible: boolean;
@@ -18,113 +29,264 @@ export default function ModalVisualizacaoUsuario({
   onEdit,
   onDelete,
 }: ModalVisualizacaoUsuarioProps) {
-  if (!usuario) return null; // Não renderiza se não houver usuário
+  const [loading, setLoading] = useState(false);
+  const [deletando, setDeletando] = useState(false);
+  const [detalhesUsuario, setDetalhesUsuario] = useState<Usuario | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const { showToast } = useToast();
 
-  const handleDelete = () => {
+  useEffect(() => {
+    if (visible && usuario?._id) {
+      carregarDetalhesUsuario(usuario._id);
+    }
+  }, [visible, usuario]);
+
+  const carregarDetalhesUsuario = async (id: string) => {
+    try {
+      setLoading(true);
+      const dados = await GetUsuarioById(id);
+      // Inverte o status vindo da API
+      const dadosAjustados = {
+        ...dados,
+        status: dados.status === false || dados.status === "false",
+      };
+      setDetalhesUsuario(dadosAjustados);
+    } catch (error: any) {
+      showToast(
+        error.message || "Erro ao carregar detalhes do usuário",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!detalhesUsuario?._id) return;
+
     Alert.alert(
-      'Confirmar Exclusão',
-      `Tem certeza que deseja excluir o usuário ${usuario.name}?`,
+      "Confirmar Exclusão",
+      `Deseja realmente excluir o usuário ${detalhesUsuario.name}?`,
       [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Excluir', style: 'destructive', onPress: () => onDelete(usuario._id) },
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeletando(true);
+              await DeleteUsuario(detalhesUsuario._id!);
+              showToast("Usuário excluído com sucesso!", "success");
+              onDelete(detalhesUsuario._id!);
+            } catch (error: any) {
+              showToast(
+                error.response?.data?.message || "Erro ao excluir usuário",
+                "error"
+              );
+            } finally {
+              setDeletando(false);
+              onClose();
+            }
+          },
+        },
       ]
     );
   };
 
+  const handleEdit = () => {
+    setEditModalVisible(true);
+  };
+
+  const handleEditSuccess = async () => {
+    if (usuario?._id) {
+      await carregarDetalhesUsuario(usuario._id);
+      onEdit(detalhesUsuario!);
+    }
+  };
+
+  const renderStatus = (status: boolean | undefined) => {
+    const isAtivo = status === false || status === undefined;
+    return (
+      <Text className={`${isAtivo ? "text-green-400" : "text-red-400"}`}>
+        {isAtivo ? "Ativo" : "Inativo"}
+      </Text>
+    );
+  };
+
+  if (!visible || !usuario) return null;
+
   return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View className="flex-1 justify-center items-center bg-black/50 p-4">
-        <View className="bg-gray-800 border border-amber-500/30 rounded-xl shadow-2xl w-full max-w-sm md:max-w-md lg:max-w-lg">
-
-          {/* Header */}
-          <View className="flex-row justify-between items-center p-4 border-b border-amber-500/30">
-            <View className="flex-row items-center gap-2">
-              {/* Ícone de logo placeholder */}
-              <View className="w-8 h-8 bg-amber-600 rounded-full items-center justify-center">
-                 <Ionicons name="person" size={20} color="#0E1A26" />
-              </View>
-              <Text className="text-xl font-bold text-amber-100">
-                Detalhes do Usuário
-              </Text>
-            </View>
-            <TouchableOpacity onPress={onClose} className="p-2">
-              <Ionicons name="close" size={24} color="#9CA3AF" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Conteúdo */}
-          <ScrollView className="p-4 max-h-[70vh]"> {/* Limitar altura para Scroll */}
-            <View className="space-y-4">
-              {/* ID */}
-              <View>
-                 <Text className="text-sm font-medium mb-1 text-amber-500">ID</Text>
-                 <Text className="text-gray-100">{usuario._id}</Text>
-              </View>
-              {/* Nome */}
-              <View>
-                <Text className="text-sm font-medium mb-1 text-amber-500">
-                  <Ionicons name="person-outline" size={14} color="#F59E0B" /> Nome Completo
+    <>
+      <Modal
+        visible={visible}
+        transparent
+        animationType="fade"
+        onRequestClose={onClose}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-gray-800 w-[90%] rounded-xl p-4">
+            {loading ? (
+              <View className="py-8">
+                <ActivityIndicator size="large" color="#F59E0B" />
+                <Text className="text-gray-400 text-center mt-4">
+                  Carregando detalhes...
                 </Text>
-                <Text className="text-gray-100">{usuario.name}</Text>
               </View>
+            ) : (
+              <>
+                {/* Header */}
+                <View className="flex-row justify-between items-center mb-4">
+                  <Text className="text-xl font-bold text-gray-100">
+                    Detalhes do Usuário
+                  </Text>
+                  <TouchableOpacity onPress={onClose}>
+                    <Ionicons name="close" size={24} color="#9CA3AF" />
+                  </TouchableOpacity>
+                </View>
 
-              {/* Email */}
-              <View>
-                <Text className="text-sm font-medium mb-1 text-amber-500">
-                   <Ionicons name="mail-outline" size={14} color="#F59E0B" /> E-mail
-                </Text>
-                <Text className="text-gray-100">{usuario.email}</Text>
-              </View>
-              
-              {/* CPF */}
-              <View>
-                <Text className="text-sm font-medium mb-1 text-amber-500">
-                   <Ionicons name="card-outline" size={14} color="#F59E0B" /> CPF
-                </Text>
-                <Text className="text-gray-100">{usuario.cpf}</Text>
-              </View>
+                {/* Conteúdo */}
+                <ScrollView className="max-h-[70vh]">
+                  <View className="space-y-4">
+                    {/* ID */}
+                    <View>
+                      <Text className="text-sm font-medium mb-1 text-amber-500">
+                        ID
+                      </Text>
+                      <Text className="text-gray-100">{usuario._id}</Text>
+                    </View>
 
-               {/* Cargo */}
-              <View>
-                <Text className="text-sm font-medium mb-1 text-amber-500">
-                   <Ionicons name="person-circle-outline" size={14} color="#F59E0B" /> Cargo
-                </Text>
-                <Text className="text-gray-100">{usuario.role}</Text>
-              </View>
+                    {/* Nome */}
+                    <View>
+                      <View className="flex-row items-center">
+                        <View style={{ marginRight: 4 }}>
+                          <Ionicons
+                            name="person-outline"
+                            size={14}
+                            color="#F59E0B"
+                          />
+                        </View>
+                        <Text className="text-sm font-medium mb-1 text-amber-500">
+                          Nome Completo
+                        </Text>
+                      </View>
+                      <Text className="text-gray-100">
+                        {detalhesUsuario?.name}
+                      </Text>
+                    </View>
 
-                {/* Status (opcional, se precisar exibir) */}
-              {/* <View>
-                <Text className="text-sm font-medium mb-1 text-amber-500">
-                   <Ionicons name="checkmark-circle-outline" size={14} color="#F59E0B" /> Status
-                </Text>
-                <Text className="text-gray-100">{usuario.status}</Text>
-              </View> */}
+                    {/* Email */}
+                    <View>
+                      <View className="flex-row items-center">
+                        <View style={{ marginRight: 4 }}>
+                          <Ionicons
+                            name="mail-outline"
+                            size={14}
+                            color="#F59E0B"
+                          />
+                        </View>
+                        <Text className="text-sm font-medium mb-1 text-amber-500">
+                          E-mail
+                        </Text>
+                      </View>
+                      <Text className="text-gray-100">
+                        {detalhesUsuario?.email}
+                      </Text>
+                    </View>
 
-            </View>
-          </ScrollView>
+                    {/* CPF */}
+                    <View>
+                      <View className="flex-row items-center">
+                        <View style={{ marginRight: 4 }}>
+                          <Ionicons
+                            name="card-outline"
+                            size={14}
+                            color="#F59E0B"
+                          />
+                        </View>
+                        <Text className="text-sm font-medium mb-1 text-amber-500">
+                          CPF
+                        </Text>
+                      </View>
+                      <Text className="text-gray-100">
+                        {detalhesUsuario?.cpf}
+                      </Text>
+                    </View>
 
-          {/* Botões de Ação */}
-          <View className="flex-row justify-end gap-3 p-4 border-t border-amber-500/30">
-            <TouchableOpacity
-              onPress={handleDelete}
-              className="px-4 py-2 rounded-lg bg-red-600/20 border border-red-600 text-red-400"
-            >
-              <Text className="text-red-400 font-medium">Excluir</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => onEdit(usuario)}
-              className="px-4 py-2 rounded-lg bg-amber-600"
-            >
-              <Text className="text-[#0E1A26] font-medium">Editar</Text>
-            </TouchableOpacity>
+                    {/* Cargo */}
+                    <View>
+                      <View className="flex-row items-center">
+                        <View style={{ marginRight: 4 }}>
+                          <Ionicons
+                            name="person-circle-outline"
+                            size={14}
+                            color="#F59E0B"
+                          />
+                        </View>
+                        <Text className="text-sm font-medium mb-1 text-amber-500">
+                          Cargo
+                        </Text>
+                      </View>
+                      <Text className="text-gray-100">
+                        {detalhesUsuario?.role}
+                      </Text>
+                    </View>
+
+                    {/* Status */}
+                    <View>
+                      <View className="flex-row items-center">
+                        <View style={{ marginRight: 4 }}>
+                          <Ionicons
+                            name="checkmark-circle-outline"
+                            size={14}
+                            color="#F59E0B"
+                          />
+                        </View>
+                        <Text className="text-sm font-medium mb-1 text-amber-500">
+                          Status
+                        </Text>
+                      </View>
+                      {renderStatus(detalhesUsuario?.status)}
+                    </View>
+                  </View>
+                </ScrollView>
+
+                {/* Botões de Ação */}
+                <View className="flex-row justify-end gap-3 mt-6">
+                  <TouchableOpacity
+                    onPress={handleEdit}
+                    className="bg-amber-600 px-4 py-2 rounded-lg"
+                  >
+                    <Text className="text-gray-900 font-medium">Editar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleDelete}
+                    disabled={deletando}
+                    className="bg-red-500 px-4 py-2 rounded-lg opacity-${
+                      deletando ? 50 : 100
+                    }"
+                  >
+                    {deletando ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <Text className="text-white font-medium">Excluir</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+
+      <ModalEdicaoUsuario
+        visible={editModalVisible}
+        usuario={detalhesUsuario}
+        onClose={() => setEditModalVisible(false)}
+        onSuccess={handleEditSuccess}
+      />
+    </>
   );
-} 
+}

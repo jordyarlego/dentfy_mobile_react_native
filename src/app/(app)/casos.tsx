@@ -1,152 +1,252 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, RefreshControl } from 'react-native';
-import { Heading, Body } from '../../components/Typography';
-import { useToast } from '../../contexts/ToastContext';
-import { colors } from '../../styles/theme';
-import { Ionicons } from '@expo/vector-icons';
-import HeaderPerito from '../../components/header';
-import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  View,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  RefreshControl,
+  Modal,
+  FlatList,
+  ActivityIndicator,
+  Text,
+} from "react-native";
+import { Heading, Body } from "../../components/Typography";
+import { useToast } from "../../contexts/ToastContext";
+import { colors } from "../../theme/colors";
+import { Ionicons } from "@expo/vector-icons";
+import HeaderPerito from "../../components/header";
+import { useRouter } from "expo-router";
+import { buscarCasos, buscarCasoCompleto } from "../../services/caso";
+import type {
+  CasoData,
+  CasoStatusAPI,
+  CasoStatusFrontend,
+} from "../../components/CaseCard";
+import { CaseCard, convertStatusToFrontend } from "../../components/CaseCard";
+//import ModalDetalhesCaso from "../../components/caso/ModalDetalhesCaso";
+import type { Caso } from "../../types/caso";
+import { convertCasoDataToCaso } from "../../utils/caso";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-export interface Caso {
-  _id: string;
-  titulo: string;
-  responsavel: string;
-  dataAbertura: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  descricao?: string;
-  tipo?: string;
-  sexo?: string;
-  local?: string;
-}
-
-// Dados mockados para teste
-const MOCK_CASES: Caso[] = [
-  {
-    _id: '1',
-    titulo: 'Análise de Mordida em Caso de Agressão',
-    responsavel: 'Dr. João Silva',
-    dataAbertura: '2024-03-15',
-    status: 'in_progress',
-    descricao: 'Análise de padrão de mordida em caso de agressão física. Vítima apresenta marcas de mordida no braço.',
-    tipo: 'Análise de Mordida',
-    sexo: 'Masculino',
-    local: 'IML São Paulo'
-  },
-  {
-    _id: '2',
-    titulo: 'Identificação por Registros Dentários',
-    responsavel: 'Dra. Maria Santos',
-    dataAbertura: '2024-03-14',
-    status: 'completed',
-    descricao: 'Identificação de vítima através de registros dentários. Corpo encontrado em estado avançado de decomposição.',
-    tipo: 'Identificação',
-    sexo: 'Feminino',
-    local: 'IML Rio de Janeiro'
-  },
-  {
-    _id: '3',
-    titulo: 'Análise de Trauma Dental',
-    responsavel: 'Dr. Pedro Oliveira',
-    dataAbertura: '2024-03-13',
-    status: 'pending',
-    descricao: 'Avaliação de trauma dental em caso de violência doméstica. Vítima apresenta fratura em incisivo central superior.',
-    tipo: 'Trauma Dental',
-    sexo: 'Feminino',
-    local: 'IML Belo Horizonte'
-  },
-  {
-    _id: '4',
-    titulo: 'Reconstrução de Arco Dental',
-    responsavel: 'Dra. Ana Costa',
-    dataAbertura: '2024-03-12',
-    status: 'in_progress',
-    descricao: 'Reconstrução de arco dental para identificação de suspeito em caso de homicídio.',
-    tipo: 'Reconstrução',
-    sexo: 'Masculino',
-    local: 'IML Curitiba'
-  },
-  {
-    _id: '5',
-    titulo: 'Análise de Idade por Desenvolvimento Dental',
-    responsavel: 'Dr. Carlos Mendes',
-    dataAbertura: '2024-03-11',
-    status: 'completed',
-    descricao: 'Determinação de idade aproximada através do desenvolvimento dental em caso de ossada encontrada.',
-    tipo: 'Determinação de Idade',
-    sexo: 'Indeterminado',
-    local: 'IML Salvador'
-  }
-];
-
-const FILTER_OPTIONS = [
-  { id: 'todos', label: 'Todos' },
-  { id: 'semana', label: 'Última Semana' },
-  { id: 'mes', label: 'Este Mês' },
-  { id: 'ano', label: 'Este Ano' },
-];
-
-const STATUS_OPTIONS = [
-  { id: 'todos', label: 'Todos' },
-  { id: 'pending', label: 'Pendentes' },
-  { id: 'in_progress', label: 'Em Andamento' },
-  { id: 'completed', label: 'Concluídos' },
-];
-
-const getStatusStyle = (status: Caso['status']) => {
-  switch (status) {
-    case 'completed':
-      return 'bg-green-500/10 text-green-400 border-green-500/30';
-    case 'in_progress':
-      return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
-    case 'pending':
-      return 'bg-red-500/10 text-red-400 border-red-500/30';
-    default:
-      return 'bg-gray-500/10 text-gray-400 border-gray-500/30';
-  }
+// Tipos
+export type CasoCreateData = Omit<CasoData, "_id" | "dataFechamento"> & {
+  dataFechamento?: string;
 };
 
-const getStatusText = (status: Caso['status']) => {
-  switch (status) {
-    case 'completed':
-      return 'Concluído';
-    case 'in_progress':
-      return 'Em Andamento';
-    case 'pending':
-      return 'Pendente';
-    default:
-      return status;
-  }
-};
+type FiltroPeriodo = "todos" | "semana" | "mes" | "ano";
+type FiltroStatus = "todos" | CasoStatusFrontend;
 
-const STORAGE_KEY = '@dentify_casos';
+// Constantes
+const FILTROS_PERIODO = [
+  { id: "todos" as const, label: "Todos" },
+  { id: "semana" as const, label: "Última-Semana" },
+  { id: "mes" as const, label: "Este Mês" },
+  { id: "ano" as const, label: "Este Ano" },
+];
 
+const FILTROS_STATUS = [
+  { id: "todos" as const, label: "Todos" },
+  { id: "em_andamento" as const, label: "Em andamento" },
+  { id: "concluido" as const, label: "Concluído" },
+  { id: "arquivado" as const, label: "Arquivado" },
+];
+
+// Componentes
+const BarraPesquisa = ({
+  search,
+  setSearch,
+}: {
+  search: string;
+  setSearch: (text: string) => void;
+}) => (
+  <View className="mt-4 relative">
+    <TextInput
+      placeholder="Pesquisar casos..."
+      value={search}
+      onChangeText={setSearch}
+      placeholderTextColor={colors.dentfyTextSecondary}
+      className="w-full px-4 py-2 bg-dentfyGray800/80 text-dentfyTextPrimary rounded-lg border border-dentfyBorderGray pr-10"
+    />
+    <View className="absolute right-3 top-3">
+      <Ionicons name="search" size={20} color={colors.dentfyTextSecondary} />
+    </View>
+  </View>
+);
+
+const BarraAcoes = ({
+  onFilterPress,
+  onAddPress,
+}: {
+  onFilterPress: () => void;
+  onAddPress: () => void;
+}) => (
+  <View className="flex-row gap-2">
+    <TouchableOpacity
+      onPress={onFilterPress}
+      className="p-2 bg-dentfyGray800 rounded-lg border border-dentfyBorderGray"
+    >
+      <Ionicons name="filter" size={20} color={colors.dentfyTextSecondary} />
+    </TouchableOpacity>
+    <TouchableOpacity
+      onPress={onAddPress}
+      className="flex-row items-center gap-2 px-4 py-2 bg-dentfyAmber/10 rounded-lg border border-dentfyAmber/30"
+    >
+      <Ionicons
+        name="add-circle-outline"
+        size={20}
+        color={colors.dentfyAmber}
+      />
+      <Body className="text-dentfyAmber">Novo Caso</Body>
+    </TouchableOpacity>
+  </View>
+);
+
+const ListaVazia = () => (
+  <View className="flex-1 items-center justify-center p-8">
+    <Ionicons
+      name="document-text-outline"
+      size={48}
+      color={colors.dentfyTextSecondary}
+    />
+    <Body size="small" className="text-dentfyTextSecondary mt-4 text-center">
+      Nenhum caso encontrado com os filtros selecionados.
+    </Body>
+  </View>
+);
+
+const ModalFiltros = ({
+  visible,
+  onClose,
+  filtroPeriodo,
+  setFiltroPeriodo,
+  filtroStatus,
+  setFiltroStatus,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  filtroPeriodo: FiltroPeriodo;
+  setFiltroPeriodo: (filtro: FiltroPeriodo) => void;
+  filtroStatus: FiltroStatus;
+  setFiltroStatus: (filtro: FiltroStatus) => void;
+}) => (
+  <Modal
+    visible={visible}
+    transparent
+    animationType="slide"
+    onRequestClose={onClose}
+  >
+    <View className="flex-1 bg-overlayBlack justify-end">
+      <View className="bg-dentfyGray800 rounded-t-2xl p-4">
+        <View className="flex-row justify-between items-center mb-4">
+          <Heading size="medium" className="text-dentfyTextPrimary">
+            Filtros
+          </Heading>
+          <TouchableOpacity onPress={onClose}>
+            <Ionicons
+              name="close"
+              size={24}
+              color={colors.dentfyTextSecondary}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View className="mb-4">
+          <Body className="text-dentfyTextSecondary mb-2">Período</Body>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="flex-row"
+          >
+            {FILTROS_PERIODO.map((option) => (
+              <TouchableOpacity
+                key={option.id}
+                onPress={() => setFiltroPeriodo(option.id)}
+                className={`mr-2 px-4 py-2 rounded-full border ${
+                  filtroPeriodo === option.id
+                    ? "bg-dentfyAmber/10 border-dentfyAmber/30"
+                    : "border-dentfyBorderGray"
+                }`}
+              >
+                <Body
+                  className={
+                    filtroPeriodo === option.id
+                      ? "text-dentfyAmber"
+                      : "text-dentfyTextSecondary"
+                  }
+                >
+                  {option.label}
+                </Body>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        <View>
+          <Body className="text-dentfyTextPrimary mb-2">Status</Body>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="flex-row"
+          >
+            {FILTROS_STATUS.map((option) => (
+              <TouchableOpacity
+                key={option.id}
+                onPress={() => setFiltroStatus(option.id)}
+                className={`mr-2 px-4 py-2 rounded-full border ${
+                  filtroStatus === option.id
+                    ? "bg-dentfyAmber/10 border-dentfyAmber/30"
+                    : "border-dentfyBorderGray"
+                }`}
+              >
+                <Body
+                  className={
+                    filtroStatus === option.id
+                      ? "text-dentfyAmber"
+                      : "text-dentfyTextSecondary"
+                  }
+                >
+                  {option.label}
+                </Body>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    </View>
+  </Modal>
+);
+
+// Componente Principal
 export default function Casos() {
   const router = useRouter();
   const { showToast } = useToast();
-  const [casos, setCasos] = useState<Caso[]>([]);
+  const [casos, setCasos] = useState<CasoData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
-  const [filtro, setFiltro] = useState("todos");
-  const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroPeriodo, setFiltroPeriodo] = useState<FiltroPeriodo>("todos");
+  const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todos");
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
 
   const loadCasos = useCallback(async () => {
     try {
-      const storedCasos = await AsyncStorage.getItem(STORAGE_KEY);
-      if (storedCasos) {
-        setCasos(JSON.parse(storedCasos));
-    } else {
-        // Se não houver casos salvos, usa os mock cases
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(MOCK_CASES));
-        setCasos(MOCK_CASES);
+      const data = await buscarCasos();
+      if (Array.isArray(data)) {
+        setCasos(data);
+      } else {
+        setCasos([]);
+        showToast("Dados de casos inválidos", "error");
       }
     } catch (error) {
-      showToast('Erro ao carregar casos', 'error');
+      setCasos([]);
+      showToast("Erro ao carregar casos", "error");
     }
-  }, []);
+  }, [showToast]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -158,198 +258,271 @@ export default function Casos() {
     loadCasos();
   }, [loadCasos]);
 
-  const casosFiltrados = casos.filter((caso) => {
-    if (!caso || !caso.titulo) return false;
+  const filtrarCasos = useCallback(
+    (caso: CasoData) => {
+      if (!caso || !caso.titulo) return false;
 
-    const nomeMatch = caso.titulo.toLowerCase().includes(search.toLowerCase());
-    const statusMatch = filtroStatus === "todos" || caso.status === filtroStatus;
-    const data = new Date(caso.dataAbertura);
-    const hoje = new Date();
+      const nomeMatch = caso.titulo
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      const statusFrontend = convertStatusToFrontend(caso.status);
+      const statusMatch =
+        filtroStatus === "todos" || statusFrontend === filtroStatus;
+      const data = new Date(caso.dataAbertura);
+      const hoje = new Date();
 
-    if (filtro === "semana") {
-      const diff = Math.abs(hoje.getTime() - data.getTime());
-      const dias = diff / (1000 * 3600 * 24);
-      return nomeMatch && statusMatch && dias <= 7;
-    }
+      switch (filtroPeriodo) {
+        case "semana":
+          const diff = Math.abs(hoje.getTime() - data.getTime());
+          const dias = diff / (1000 * 3600 * 24);
+          return nomeMatch && statusMatch && dias <= 7;
 
-    if (filtro === "mes") {
-      return (
-        nomeMatch &&
-        statusMatch &&
-        data.getMonth() === hoje.getMonth() &&
-        data.getFullYear() === hoje.getFullYear()
+        case "mes":
+          return (
+            nomeMatch &&
+            statusMatch &&
+            data.getMonth() === hoje.getMonth() &&
+            data.getFullYear() === hoje.getFullYear()
+          );
+
+        case "ano":
+          return (
+            nomeMatch &&
+            statusMatch &&
+            data.getFullYear() === hoje.getFullYear()
+          );
+
+        default:
+          return nomeMatch && statusMatch;
+      }
+    },
+    [search, filtroStatus, filtroPeriodo]
+  );
+
+  const casosFiltrados = casos.filter(filtrarCasos);
+
+  const handleCasePress = async (caseId: string) => {
+    try {
+      console.log("=== INÍCIO DO CARREGAMENTO DO CASO ===");
+      console.log("ID do caso:", caseId);
+
+      // Verificar token antes de fazer a requisição
+      const token = await AsyncStorage.getItem("token");
+      console.log(
+        "Token antes da requisição:",
+        token ? "Token presente" : "Token ausente"
       );
+
+      console.log("Iniciando busca do caso completo...");
+      const {
+        caso: casoData,
+        vitimas,
+        evidencias,
+        peritos,
+      } = await buscarCasoCompleto(caseId);
+      console.log("Dados recebidos da API:", {
+        caso: casoData ? "Caso presente" : "Caso ausente",
+        vitimas: vitimas?.length || 0,
+        evidencias: evidencias?.length || 0,
+        peritos: peritos?.length || 0,
+      });
+
+      console.log("Convertendo dados do caso...");
+      const casoConvertido = convertCasoDataToCaso(
+        casoData,
+        vitimas,
+        evidencias,
+        peritos
+      );
+      console.log("Caso convertido:", {
+        id: casoConvertido._id,
+        titulo: casoConvertido.titulo,
+        vitimas: casoConvertido.vitimas?.length || 0,
+        evidencias: casoConvertido.evidencias?.length || 0,
+        peritos: casoConvertido.peritos?.length || 0,
+      });
+
+      console.log("Atualizando estado...");
+      router.push(`/caso/${casoConvertido._id}`);
+      console.log("Estado atualizado com sucesso");
+
+      console.log("=== FIM DO CARREGAMENTO DO CASO ===");
+    } catch (error: any) {
+      console.error("=== ERRO NO CARREGAMENTO DO CASO ===");
+      console.error("Mensagem de erro:", error.message);
+      console.error("Status da resposta:", error.response?.status);
+      console.error("Dados da resposta:", error.response?.data);
+      console.error("Headers da resposta:", error.response?.headers);
+      console.error("Stack do erro:", error.stack);
+      console.error("=== FIM DO ERRO ===");
+
+      showToast("Erro ao carregar detalhes do caso", "error");
     }
-
-    if (filtro === "ano") {
-      return nomeMatch && statusMatch && data.getFullYear() === hoje.getFullYear();
-    }
-
-    return nomeMatch && statusMatch;
-  });
-
-  const handleCasePress = (caseId: string) => {
-    router.push(`/caso/${caseId}`);
   };
 
   const handleAddCase = () => {
-    router.push('/novo-caso');
+    router.push("/novo-caso");
   };
 
-  const FilterModal = () => (
-    <Modal
-      visible={showFilters}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowFilters(false)}
-    >
-      <View className="flex-1 bg-black/50 justify-end">
-        <View className="bg-gray-800 rounded-t-2xl p-4">
-          <View className="flex-row justify-between items-center mb-4">
-            <Heading size="medium" className="text-gray-100">Filtros</Heading>
-            <TouchableOpacity onPress={() => setShowFilters(false)}>
-              <Ionicons name="close" size={24} color="#9CA3AF" />
-            </TouchableOpacity>
-          </View>
+  const handleAddVitima = () => {
+    if (casos.length > 0) {
+      router.push(`/caso/${casos[0]._id}/vitima/nova`);
+    }
+  };
 
-          <View className="mb-4">
-            <Body className="text-gray-300 mb-2">Período</Body>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-              {FILTER_OPTIONS.map((option) => (
-                <TouchableOpacity
-                  key={option.id}
-                  onPress={() => setFiltro(option.id)}
-                  className={`mr-2 px-4 py-2 rounded-full border ${
-                    filtro === option.id
-                      ? 'bg-amber-500/10 border-amber-500/30'
-                      : 'border-gray-700'
-                  }`}
-                >
-                  <Body className={filtro === option.id ? 'text-amber-500' : 'text-gray-400'}>
-                    {option.label}
-                  </Body>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+  const handleAddEvidencia = () => {
+    if (casos.length > 0) {
+      router.push(`/caso/${casos[0]._id}/evidencia/nova`);
+    }
+  };
 
-          <View>
-            <Body className="text-gray-300 mb-2">Status</Body>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-              {STATUS_OPTIONS.map((option) => (
-                <TouchableOpacity
-                  key={option.id}
-                  onPress={() => setFiltroStatus(option.id)}
-                  className={`mr-2 px-4 py-2 rounded-full border ${
-                    filtroStatus === option.id
-                      ? 'bg-amber-500/10 border-amber-500/30'
-                      : 'border-gray-700'
-                  }`}
-                >
-                  <Body className={filtroStatus === option.id ? 'text-amber-500' : 'text-gray-400'}>
-                    {option.label}
-                  </Body>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
+  const handleAddPerito = () => {
+    if (casos.length > 0) {
+      router.push(`/caso/${casos[0]._id}/perito/novo`);
+    }
+  };
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const carregarCasos = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await buscarCasos();
+      console.log("Resposta da API (buscarCasos):", response);
+      if (Array.isArray(response)) {
+        setCasos(response);
+      } else {
+        console.error(
+          "Formato inesperado da resposta da API (buscarCasos):",
+          response
+        );
+        setError("Erro ao carregar casos: formato inesperado");
+        setCasos([]);
+      }
+    } catch (err: any) {
+      console.error("Erro ao buscar casos:", err);
+      setError("Erro ao carregar casos.");
+      setCasos([]);
+      if (err.response && err.response.status === 401) {
+        showToast("Sessão expirada. Faça login novamente.", "error");
+        AsyncStorage.removeItem("token");
+        router.replace("/");
+      } else {
+        showToast(err.message || "Erro ao carregar casos.", "error");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    carregarCasos();
+  }, []);
+
+  const filteredCasos = useMemo(() => {
+    return casos.filter((caso) => {
+      const matchesSearch =
+        search === "" ||
+        caso.titulo.toLowerCase().includes(search.toLowerCase()) ||
+        caso.responsavel.toLowerCase().includes(search.toLowerCase()) ||
+        caso.local.toLowerCase().includes(search.toLowerCase());
+
+      const matchesStatus =
+        selectedStatus === null || caso.status === selectedStatus;
+      const matchesType = selectedType === null || caso.tipo === selectedType;
+
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [casos, search, selectedStatus, selectedType]);
+
+  const handleApplyFilters = (status: string | null, type: string | null) => {
+    setSelectedStatus(status);
+    setSelectedType(type);
+    setShowFilters(false);
+  };
+
+  const handleClearFilters = () => {
+    setSelectedStatus(null);
+    setSelectedType(null);
+    setShowFilters(false);
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-dentfyDarkBlue">
+        <ActivityIndicator size="large" color={colors.dentfyAmber} />
       </View>
-    </Modal>
-  );
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center bg-dentfyDarkBlue p-4">
+        <Body className="text-errorRed mb-4">{error}</Body>
+        <TouchableOpacity
+          onPress={carregarCasos}
+          className="bg-dentfyMediumBlue py-2 px-4 rounded"
+        >
+          <Body className="text-dentfyTextPrimary">Tentar Novamente</Body>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
-    <View className="flex-1 bg-gray-900">
+    <SafeAreaView className="flex-1 bg-dentfyDarkBlue">
       <HeaderPerito />
-      
+
       <View className="flex-1">
-        <View className="p-4 border-b border-gray-800">
+        <View className="p-4 border-b border-dentfyBorderGray">
           <View className="flex-row justify-between items-center">
-            <Heading size="large" className="text-gray-100">Casos</Heading>
-            <View className="flex-row gap-2">
-              <TouchableOpacity 
-                onPress={() => setShowFilters(true)}
-                className="p-2 bg-gray-800 rounded-lg border border-gray-700"
-              >
-                <Ionicons name="filter" size={20} color="#9CA3AF" />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={handleAddCase}
-                className="flex-row items-center gap-2 px-4 py-2 bg-amber-500/10 rounded-lg border border-amber-500/30"
-              >
-                <Ionicons name="add-circle-outline" size={20} color={colors.warning} />
-                <Body className="text-amber-500">Novo Caso</Body>
-              </TouchableOpacity>
-            </View>
+            <Heading size="large" className="text-dentfyTextPrimary">
+              Casos
+            </Heading>
+            <BarraAcoes
+              onFilterPress={() => setShowFilters(true)}
+              onAddPress={handleAddCase}
+            />
           </View>
 
-          <View className="mt-4">
-            <View className="relative">
-              <TextInput
-                placeholder="Pesquisar casos..."
-                value={search}
-                onChangeText={setSearch}
-                className="w-full px-4 py-2 bg-gray-800/80 text-gray-200 rounded-lg border border-gray-700"
-                placeholderTextColor={colors.textSecondary}
-              />
-              <Ionicons 
-                name="search" 
-                size={20} 
-                color={colors.textSecondary}
-                className="absolute right-3 top-2.5"
-              />
-            </View>
-          </View>
+          <BarraPesquisa search={search} setSearch={setSearch} />
         </View>
 
-        <ScrollView 
+        <ScrollView
           className="flex-1"
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={[colors.warning]}
-              tintColor={colors.warning}
+              colors={[colors.dentfyAmber]}
+              tintColor={colors.dentfyAmber}
             />
           }
         >
-          {casosFiltrados.length === 0 ? (
-            <View className="flex-1 items-center justify-center p-8">
-              <Ionicons name="document-text-outline" size={48} color={colors.textSecondary} />
-              <Body className="text-gray-500 mt-4">Nenhum caso encontrado</Body>
-            </View>
+          {filteredCasos.length === 0 ? (
+            <ListaVazia />
           ) : (
-            casosFiltrados.map((caso) => (
-              <TouchableOpacity
+            filteredCasos.map((caso) => (
+              <CaseCard
                 key={caso._id}
+                caso={caso}
                 onPress={() => handleCasePress(caso._id)}
-                className="m-4 p-4 bg-gray-800/80 rounded-lg border border-gray-700"
-              >
-                <View className="flex-row justify-between items-center mb-2">
-                  <Heading size="small" className="text-gray-100 flex-1 mr-2">
-                    {caso.titulo}
-                  </Heading>
-                  <View className={`px-3 py-1 rounded-full border ${getStatusStyle(caso.status)}`}>
-                    <Body className="text-xs">
-                      {getStatusText(caso.status)}
-                    </Body>
-                  </View>
-                </View>
-                
-                <Body className="text-gray-300 mb-1">
-                  Paciente: {caso.responsavel}
-                </Body>
-                
-                <Body className="text-gray-400">
-                  Data: {new Date(caso.dataAbertura).toLocaleDateString("pt-BR")}
-                </Body>
-              </TouchableOpacity>
+              />
             ))
           )}
         </ScrollView>
-      </View>
 
-      <FilterModal />
-    </View>
+        <ModalFiltros
+          visible={showFilters}
+          onClose={() => setShowFilters(false)}
+          filtroPeriodo={filtroPeriodo}
+          setFiltroPeriodo={setFiltroPeriodo}
+          filtroStatus={filtroStatus}
+          setFiltroStatus={setFiltroStatus}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
