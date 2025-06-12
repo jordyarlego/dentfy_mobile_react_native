@@ -359,28 +359,27 @@ export default function Odontograma() {
             </View>
           </View>
 
-          {/* Controles de Seleção - Apenas se não for modo visualização */}
+          {/* Controles de Seleção - Dropdowns Separados em Cards Diferentes */}
           {!modoVisualizacao && (
-            <View className="bg-dentfyGray800/30 p-4 rounded-xl border border-dentfyGray700/30 mt-6">
-              <View className="flex-row items-center mb-4">
-                <Ionicons name="settings" size={20} color={colors.dentfyTextSecondary} />
-                <Body className="text-dentfyTextSecondary ml-2 font-medium">
-                  Registrar Avaria
-                </Body>
-              </View>
-
-              <View>
-                {/* Dropdown Dente */}
+            <>
+              {/* Card 1 - Seleção de Dente */}
+              <View className="bg-dentfyGray800/30 p-4 rounded-xl border border-dentfyGray700/30 mt-6">
                 <View className="mb-4">
-                  <Body className="text-dentfyTextSecondary mb-2">Selecionar Dente:</Body>
+                  <Body className="text-dentfyTextSecondary font-medium text-lg">
+                    Selecionar Dente
+                  </Body>
+                </View>
+
+                <View>
+                  <Body className="text-dentfyTextSecondary mb-2">Dente:</Body>
                   <View className="bg-dentfyGray800 rounded-lg border border-dentfyGray700">
                     <Picker
                       selectedValue={denteSelecionado}
                       onValueChange={(itemValue) => setDenteSelecionado(itemValue)}
                       style={{
                         color: colors.dentfyTextPrimary,
-                        height: isIOS ? 120 : 50,
-                        fontSize: 14
+                        height: isIOS ? 150 : 50,
+                        fontSize: 16
                       }}
                       dropdownIconColor={colors.dentfyTextSecondary}
                       numberOfLines={1}
@@ -393,18 +392,26 @@ export default function Odontograma() {
                     </Picker>
                   </View>
                 </View>
+              </View>
 
-                {/* Dropdown Tipo de Avaria */}
-                <View className="mb-6">
-                  <Body className="text-dentfyTextSecondary mb-2">Tipo de Avaria:</Body>
+              {/* Card 2 - Tipo de Avaria */}
+              <View className="bg-dentfyGray800/30 p-4 rounded-xl border border-dentfyGray700/30 mt-6">
+                <View className="mb-4">
+                  <Body className="text-dentfyTextSecondary font-medium text-lg">
+                    Tipo de Avaria
+                  </Body>
+                </View>
+
+                <View>
+                  <Body className="text-dentfyTextSecondary mb-2">Avaria:</Body>
                   <View className="bg-dentfyGray800 rounded-lg border border-dentfyGray700">
                     <Picker
                       selectedValue={avariaSelecionada}
                       onValueChange={(itemValue) => setAvariaSelecionada(itemValue)}
                       style={{
                         color: colors.dentfyTextPrimary,
-                        height: isIOS ? 120 : 50,
-                        fontSize: 14
+                        height: isIOS ? 150 : 50,
+                        fontSize: 16
                       }}
                       dropdownIconColor={colors.dentfyTextSecondary}
                       numberOfLines={1}
@@ -417,8 +424,16 @@ export default function Odontograma() {
                     </Picker>
                   </View>
                 </View>
+              </View>
 
-                {/* Botão Salvar Avaria */}
+              {/* Card 3 - Botão Salvar Avaria */}
+              <View className="bg-dentfyGray800/30 p-4 rounded-xl border border-dentfyGray700/30 mt-6">
+                <View className="mb-4">
+                  <Body className="text-dentfyTextSecondary font-medium text-lg">
+                    Adicionar Avaria
+                  </Body>
+                </View>
+
                 <TouchableOpacity
                   onPress={salvarAvaria}
                   disabled={!denteSelecionado || !avariaSelecionada}
@@ -435,7 +450,7 @@ export default function Odontograma() {
                   </Body>
                 </TouchableOpacity>
               </View>
-            </View>
+            </>
           )}
 
           {/* Imagem do Odontograma com Ícones */}
