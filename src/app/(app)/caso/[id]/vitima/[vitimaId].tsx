@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, Text, Alert, ActivityIndicator, Modal, Pressable, StatusBar, Image } from 'react-native';
+import { View, ScrollView, TouchableOpacity, TextInput, Text, Alert, ActivityIndicator, Modal, Pressable, StatusBar, Image, RefreshControl, Dimensions, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderPerito from '@/components/header';
 import { Body, Heading } from '@/components/Typography';
 import { colors } from '@/theme/colors';
-import type { Vitima, Odontograma} from '@/services/api_vitima';
+import type { Vitima } from '@/services/api_vitima';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { buscarOdontogramaVitima } from '@/services/api_vitima';
-import { Dimensions } from 'react-native';
-const screenWidth = Dimensions.get('window').width;
-const imageWidth = screenWidth - 48; // margem/padding
-const imageHeight = (imageWidth / 650) * 360; // mantendo proporção da imagem original
 import {
   buscarVitimaPorId,
   atualizarVitima,
@@ -46,41 +42,42 @@ const icones: Record<string, { icon: string; color: string; library: string }> =
 
 const getMapaCoordenadas = (imageWidth: number, imageHeight: number): Record<string, Coordenada>  => {
   return {
-    '11': { top: imageHeight * 0.15, left: imageWidth * 0.45 },
-    '12': { top: imageHeight * 0.15, left: imageWidth * 0.42 },
-    '13': { top: imageHeight * 0.15, left: imageWidth * 0.39 },
-    '14': { top: imageHeight * 0.15, left: imageWidth * 0.36 },
-    '15': { top: imageHeight * 0.15, left: imageWidth * 0.33 },
-    '16': { top: imageHeight * 0.15, left: imageWidth * 0.30 },
-    '17': { top: imageHeight * 0.15, left: imageWidth * 0.27 },
-    '18': { top: imageHeight * 0.15, left: imageWidth * 0.24 },
-    '21': { top: imageHeight * 0.15, left: imageWidth * 0.55 },
-    '22': { top: imageHeight * 0.15, left: imageWidth * 0.58 },
-    '23': { top: imageHeight * 0.15, left: imageWidth * 0.61 },
-    '24': { top: imageHeight * 0.15, left: imageWidth * 0.64 },
-    '25': { top: imageHeight * 0.15, left: imageWidth * 0.67 },
-    '26': { top: imageHeight * 0.15, left: imageWidth * 0.70 },
-    '27': { top: imageHeight * 0.15, left: imageWidth * 0.73 },
-    '28': { top: imageHeight * 0.15, left: imageWidth * 0.76 },
-    '31': { top: imageHeight * 0.85, left: imageWidth * 0.45 },
-    '32': { top: imageHeight * 0.85, left: imageWidth * 0.42 },
-    '33': { top: imageHeight * 0.85, left: imageWidth * 0.39 },
-    '34': { top: imageHeight * 0.85, left: imageWidth * 0.36 },
-    '35': { top: imageHeight * 0.85, left: imageWidth * 0.33 },
-    '36': { top: imageHeight * 0.85, left: imageWidth * 0.30 },
-    '37': { top: imageHeight * 0.85, left: imageWidth * 0.27 },
-    '38': { top: imageHeight * 0.85, left: imageWidth * 0.24 },
-    '41': { top: imageHeight * 0.85, left: imageWidth * 0.55 },
-    '42': { top: imageHeight * 0.85, left: imageWidth * 0.58 },
-    '43': { top: imageHeight * 0.85, left: imageWidth * 0.61 },
-    '44': { top: imageHeight * 0.85, left: imageWidth * 0.64 },
-    '45': { top: imageHeight * 0.85, left: imageWidth * 0.67 },
-    '46': { top: imageHeight * 0.85, left: imageWidth * 0.70 },
-    '47': { top: imageHeight * 0.85, left: imageWidth * 0.73 },
-    '48': { top: imageHeight * 0.85, left: imageWidth * 0.76 },
+    // Dentes superiores (11-18, 21-28) - Ajustados para melhor posicionamento
+    '11': { top: imageHeight * 0.12, left: imageWidth * 0.48 },
+    '12': { top: imageHeight * 0.12, left: imageWidth * 0.44 },
+    '13': { top: imageHeight * 0.12, left: imageWidth * 0.40 },
+    '14': { top: imageHeight * 0.12, left: imageWidth * 0.36 },
+    '15': { top: imageHeight * 0.12, left: imageWidth * 0.32 },
+    '16': { top: imageHeight * 0.12, left: imageWidth * 0.28 },
+    '17': { top: imageHeight * 0.12, left: imageWidth * 0.24 },
+    '18': { top: imageHeight * 0.12, left: imageWidth * 0.20 },
+    '21': { top: imageHeight * 0.12, left: imageWidth * 0.52 },
+    '22': { top: imageHeight * 0.12, left: imageWidth * 0.56 },
+    '23': { top: imageHeight * 0.12, left: imageWidth * 0.60 },
+    '24': { top: imageHeight * 0.12, left: imageWidth * 0.64 },
+    '25': { top: imageHeight * 0.12, left: imageWidth * 0.68 },
+    '26': { top: imageHeight * 0.12, left: imageWidth * 0.72 },
+    '27': { top: imageHeight * 0.12, left: imageWidth * 0.76 },
+    '28': { top: imageHeight * 0.12, left: imageWidth * 0.80 },
+    // Dentes inferiores (31-38, 41-48) - Ajustados para melhor posicionamento
+    '31': { top: imageHeight * 0.88, left: imageWidth * 0.48 },
+    '32': { top: imageHeight * 0.88, left: imageWidth * 0.44 },
+    '33': { top: imageHeight * 0.88, left: imageWidth * 0.40 },
+    '34': { top: imageHeight * 0.88, left: imageWidth * 0.36 },
+    '35': { top: imageHeight * 0.88, left: imageWidth * 0.32 },
+    '36': { top: imageHeight * 0.88, left: imageWidth * 0.28 },
+    '37': { top: imageHeight * 0.88, left: imageWidth * 0.24 },
+    '38': { top: imageHeight * 0.88, left: imageWidth * 0.20 },
+    '41': { top: imageHeight * 0.88, left: imageWidth * 0.52 },
+    '42': { top: imageHeight * 0.88, left: imageWidth * 0.56 },
+    '43': { top: imageHeight * 0.88, left: imageWidth * 0.60 },
+    '44': { top: imageHeight * 0.88, left: imageWidth * 0.64 },
+    '45': { top: imageHeight * 0.88, left: imageWidth * 0.68 },
+    '46': { top: imageHeight * 0.88, left: imageWidth * 0.72 },
+    '47': { top: imageHeight * 0.88, left: imageWidth * 0.76 },
+    '48': { top: imageHeight * 0.88, left: imageWidth * 0.80 },
   };
 };
-
 
 type Sexo = 'Masculino' | 'Feminino' | 'Outro';
 type Etnia = 'Preto' | 'Pardo' | 'Branco' | 'Amarelo' | 'Indígena';
@@ -89,11 +86,23 @@ export default function DetalhesVitima() {
   const { vitimaId, id: casoId } = useLocalSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState<Vitima | null>(null);
   const [dentesAvariados, setDentesAvariados] = useState<{ [numero: string]: string }>({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Cálculo das dimensões da imagem (igual ao odontograma)
+  const screenWidth = Dimensions.get('window').width;
+  const screenHeight = Dimensions.get('window').height;
+  const isSmallScreen = screenWidth < 400;
+  const isLargeScreen = screenWidth > 768;
+  const isIOS = Platform.OS === 'ios';
+
+  // Ajusta o tamanho da imagem baseado na tela (igual ao odontograma)
+  const imageWidth = isSmallScreen ? screenWidth - 32 : isLargeScreen ? 400 : 300;
+  const imageHeight = isSmallScreen ? 150 : isLargeScreen ? 280 : 200;
 
   useEffect(() => {
     if (typeof vitimaId === 'string') {
@@ -113,12 +122,33 @@ export default function DetalhesVitima() {
     } finally {
       setLoading(false);
     }
-    const odontograma = await buscarOdontogramaVitima(id);
-    const mapa = odontograma.reduce((acc, avaria) => {
-      acc[avaria.numero] = avaria.descricao;
-      return acc;
-    }, {} as { [numero: string]: string });
-    setDentesAvariados(mapa);
+    
+    try {
+      const odontograma = await buscarOdontogramaVitima(id);
+      const mapa = odontograma.reduce((acc, avaria) => {
+        acc[avaria.numero] = avaria.descricao;
+        return acc;
+      }, {} as { [numero: string]: string });
+      setDentesAvariados(mapa);
+    } catch (error) {
+      console.error('Erro ao carregar odontograma:', error);
+    }
+  };
+
+  const onRefresh = async () => {
+    if (typeof vitimaId === 'string') {
+      setRefreshing(true);
+      try {
+        await carregarVitima(vitimaId);
+        // Feedback visual sutil de sucesso
+        console.log('Dados atualizados com sucesso');
+      } catch (error) {
+        console.error('Erro ao atualizar dados:', error);
+        Alert.alert('Erro', 'Não foi possível atualizar os dados. Tente novamente.');
+      } finally {
+        setRefreshing(false);
+      }
+    }
   };
 
   const handleChange = (field: keyof Vitima, value: any) => {
@@ -130,7 +160,7 @@ export default function DetalhesVitima() {
     if (!formData || !vitimaId) return;
 
     // Validar campos obrigatórios
-    const camposObrigatorios: (keyof Omit<Vitima, '_id' | 'criadoEm' | 'odontograma' | 'odontogramas' | 'caso'>)[] = [
+    const camposObrigatorios: (keyof Omit<Vitima, '_id' | 'criadoEm' | 'odontograma' | 'caso'>)[] = [
       'nomeCompleto',
       'dataNascimento',
       'sexo',
@@ -153,9 +183,9 @@ export default function DetalhesVitima() {
 
     try {
       setSaving(true);
-      // Montar dados para atualizar (remover _id, criadoEm, odontograma, odontogramas, caso)
+      // Montar dados para atualizar (remover _id, criadoEm, odontograma, caso)
       const {
-        _id, criadoEm, odontograma, odontogramas, caso, ...dadosAtualizar
+        _id, criadoEm, odontograma, caso, ...dadosAtualizar
       } = formData;
 
       await atualizarVitima(vitimaId as string, dadosAtualizar);
@@ -251,16 +281,42 @@ export default function DetalhesVitima() {
     <View className="flex-1 bg-dentfyGray900">
       <HeaderPerito showBackButton />
 
-      <ScrollView className="flex-1 p-4">
+      <ScrollView 
+        className="flex-1 p-4" 
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={[colors.dentfyAmber]}
+            tintColor={colors.dentfyAmber}
+            progressBackgroundColor={colors.dentfyGray800}
+            progressViewOffset={10}
+          />
+        }
+      >
         {/* Header da Vítima */}
         <View className="mb-6">
           <View className="flex-row justify-between items-start mb-4">
             <View className="flex-1">
-              <Heading size="large" className="text-dentfyAmber mb-2">
-                {editing ? 'Editar Vítima' : formData.nomeCompleto}
-              </Heading>
+              <View className="flex-row items-center mb-2">
+                <Heading size="large" className="text-dentfyAmber">
+                  {editing ? 'Editar Vítima' : formData.nomeCompleto}
+                </Heading>
+                {refreshing && (
+                  <ActivityIndicator 
+                    size="small" 
+                    color={colors.dentfyAmber} 
+                    style={{ marginLeft: 8 }}
+                  />
+                )}
+              </View>
               <Body className="text-dentfyTextSecondary">
-                {editing ? 'Atualize os dados da vítima abaixo.' : 'Detalhes da vítima'}
+                {editing 
+                  ? 'Atualize os dados da vítima abaixo.' 
+                  : refreshing 
+                    ? 'Atualizando dados...' 
+                    : 'Detalhes da vítima'
+                }
               </Body>
             </View>
 
@@ -470,62 +526,62 @@ export default function DetalhesVitima() {
             </View>
 
             {/* Odontogramas */}
-<View className="bg-dentfyGray800/30 p-4 rounded-lg">
-  <View className="flex-row items-center mb-4">
-    <View className="flex-row items-center">
-      <Ionicons name="medical" size={24} color={colors.dentfyAmber} />
-      <Heading size="medium" className="text-dentfyTextPrimary ml-2">
-        Odontogramas
-      </Heading>
-    </View>
-  </View>
+            <View className="bg-dentfyGray800/30 p-4 rounded-lg">
+              <View className="flex-row items-center mb-4">
+                <View className="flex-row items-center">
+                  <Ionicons name="medical" size={24} color={colors.dentfyAmber} />
+                  <Heading size="medium" className="text-dentfyTextPrimary ml-2">
+                    Odontogramas
+                  </Heading>
+                </View>
+              </View>
 
-  {Object.keys(dentesAvariados).length > 0 ? (
-    <View className="items-center mt-4">
-      <View style={{ position: 'relative' }}>
-        <Image
-          source={require('@/assets/odontograma.webp')}
-          style={{
-            width: imageWidth,
-            height: imageHeight,
-            borderRadius: 12,
-          }}
-          resizeMode="contain"
-        />
+              {Object.keys(dentesAvariados).length > 0 ? (
+                <View className="items-center mt-4">
+                  <View style={{ position: 'relative' }}>
+                    <Image
+                      source={require('@/assets/odontograma.webp')}
+                      style={{
+                        width: imageWidth,
+                        height: imageHeight,
+                        borderRadius: 12,
+                      }}
+                      resizeMode="contain"
+                    />
 
-        {/* Aqui chamamos a função corretamente para gerar o mapa de coordenadas */}
-        {(() => {
-          const mapaCoordenadas = getMapaCoordenadas(imageWidth, imageHeight);
-          return Object.entries(dentesAvariados).map(([numero, tipo]) => {
-            const pos = mapaCoordenadas[numero];
-            return pos ? (
-              <TouchableOpacity
-                key={numero}
-                style={{
-                  position: 'absolute',
-                  top: pos.top - 8,
-                  left: pos.left - 8,
-                  backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                  borderRadius: 12,
-                  padding: 1,
-                }}
-              >
-                {renderIcon(tipo, 14)}
-              </TouchableOpacity>
-            ) : null;
-          });
-        })()}
-      </View>
-    </View>
-  ) : (
-    <View className="items-center py-8">
-      <Ionicons name="medical-outline" size={48} color={colors.dentfyTextSecondary} />
-      <Body className="text-dentfyTextSecondary text-center mt-3">
-        Nenhum odontograma registrado
-      </Body>
-    </View>
-  )}
-</View>
+                    {/* Aqui chamamos a função corretamente para gerar o mapa de coordenadas */}
+                    {(() => {
+                      const mapaCoordenadas = getMapaCoordenadas(imageWidth, imageHeight);
+                      return Object.entries(dentesAvariados).map(([numero, tipo]) => {
+                        const pos = mapaCoordenadas[numero];
+                        return pos ? (
+                          <TouchableOpacity
+                            key={numero}
+                            style={{
+                              position: 'absolute',
+                              top: pos.top - 8,
+                              left: pos.left - 8,
+                              backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                              borderRadius: 12,
+                              padding: 1,
+                            }}
+                          >
+                            {renderIcon(tipo, 14)}
+                          </TouchableOpacity>
+                        ) : null;
+                      });
+                    })()}
+                  </View>
+                </View>
+              ) : (
+                <View className="items-center py-8">
+                  <Ionicons name="medical-outline" size={48} color={colors.dentfyTextSecondary} />
+                  <Body className="text-dentfyTextSecondary text-center mt-3">
+                    Nenhum odontograma registrado
+                  </Body>
+                </View>
+              )}
+            </View>
           </View>
         )}
       </ScrollView>

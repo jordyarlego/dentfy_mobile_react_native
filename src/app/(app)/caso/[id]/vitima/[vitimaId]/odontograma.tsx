@@ -6,7 +6,6 @@ import { Picker } from '@react-native-picker/picker';
 import HeaderPerito from '@/components/header';
 import { Body, Heading } from '@/components/Typography';
 import { colors } from '@/theme/colors';
-import type { Odontograma } from '@/services/api_vitima';
 import { buscarOdontogramaVitima } from '@/services/api_vitima';
 import { atualizarOdontogramaVitima } from '@/services/api_vitima';
 
@@ -76,43 +75,43 @@ export default function Odontograma() {
     const baseHeight = isSmallScreen ? 150 : isLargeScreen ? 280 : 200;
 
     return {
-      // Dentes superiores (11-18, 21-28)
-      '11': { top: baseHeight * 0.15, left: baseWidth * 0.45 },
-      '12': { top: baseHeight * 0.15, left: baseWidth * 0.42 },
-      '13': { top: baseHeight * 0.15, left: baseWidth * 0.39 },
-      '14': { top: baseHeight * 0.15, left: baseWidth * 0.36 },
-      '15': { top: baseHeight * 0.15, left: baseWidth * 0.33 },
-      '16': { top: baseHeight * 0.15, left: baseWidth * 0.30 },
-      '17': { top: baseHeight * 0.15, left: baseWidth * 0.27 },
-      '18': { top: baseHeight * 0.15, left: baseWidth * 0.24 },
+      // Dentes superiores (11-18, 21-28) - Ajustados para melhor posicionamento
+      '11': { top: baseHeight * 0.12, left: baseWidth * 0.48 },
+      '12': { top: baseHeight * 0.12, left: baseWidth * 0.44 },
+      '13': { top: baseHeight * 0.12, left: baseWidth * 0.40 },
+      '14': { top: baseHeight * 0.12, left: baseWidth * 0.36 },
+      '15': { top: baseHeight * 0.12, left: baseWidth * 0.32 },
+      '16': { top: baseHeight * 0.12, left: baseWidth * 0.28 },
+      '17': { top: baseHeight * 0.12, left: baseWidth * 0.24 },
+      '18': { top: baseHeight * 0.12, left: baseWidth * 0.20 },
 
-      '21': { top: baseHeight * 0.15, left: baseWidth * 0.55 },
-      '22': { top: baseHeight * 0.15, left: baseWidth * 0.58 },
-      '23': { top: baseHeight * 0.15, left: baseWidth * 0.61 },
-      '24': { top: baseHeight * 0.15, left: baseWidth * 0.64 },
-      '25': { top: baseHeight * 0.15, left: baseWidth * 0.67 },
-      '26': { top: baseHeight * 0.15, left: baseWidth * 0.70 },
-      '27': { top: baseHeight * 0.15, left: baseWidth * 0.73 },
-      '28': { top: baseHeight * 0.15, left: baseWidth * 0.76 },
+      '21': { top: baseHeight * 0.12, left: baseWidth * 0.52 },
+      '22': { top: baseHeight * 0.12, left: baseWidth * 0.56 },
+      '23': { top: baseHeight * 0.12, left: baseWidth * 0.60 },
+      '24': { top: baseHeight * 0.12, left: baseWidth * 0.64 },
+      '25': { top: baseHeight * 0.12, left: baseWidth * 0.68 },
+      '26': { top: baseHeight * 0.12, left: baseWidth * 0.72 },
+      '27': { top: baseHeight * 0.12, left: baseWidth * 0.76 },
+      '28': { top: baseHeight * 0.12, left: baseWidth * 0.80 },
 
-      // Dentes inferiores (31-38, 41-48)
-      '31': { top: baseHeight * 0.85, left: baseWidth * 0.45 },
-      '32': { top: baseHeight * 0.85, left: baseWidth * 0.42 },
-      '33': { top: baseHeight * 0.85, left: baseWidth * 0.39 },
-      '34': { top: baseHeight * 0.85, left: baseWidth * 0.36 },
-      '35': { top: baseHeight * 0.85, left: baseWidth * 0.33 },
-      '36': { top: baseHeight * 0.85, left: baseWidth * 0.30 },
-      '37': { top: baseHeight * 0.85, left: baseWidth * 0.27 },
-      '38': { top: baseHeight * 0.85, left: baseWidth * 0.24 },
+      // Dentes inferiores (31-38, 41-48) - Ajustados para melhor posicionamento
+      '31': { top: baseHeight * 0.88, left: baseWidth * 0.48 },
+      '32': { top: baseHeight * 0.88, left: baseWidth * 0.44 },
+      '33': { top: baseHeight * 0.88, left: baseWidth * 0.40 },
+      '34': { top: baseHeight * 0.88, left: baseWidth * 0.36 },
+      '35': { top: baseHeight * 0.88, left: baseWidth * 0.32 },
+      '36': { top: baseHeight * 0.88, left: baseWidth * 0.28 },
+      '37': { top: baseHeight * 0.88, left: baseWidth * 0.24 },
+      '38': { top: baseHeight * 0.88, left: baseWidth * 0.20 },
 
-      '41': { top: baseHeight * 0.85, left: baseWidth * 0.55 },
-      '42': { top: baseHeight * 0.85, left: baseWidth * 0.58 },
-      '43': { top: baseHeight * 0.85, left: baseWidth * 0.61 },
-      '44': { top: baseHeight * 0.85, left: baseWidth * 0.64 },
-      '45': { top: baseHeight * 0.85, left: baseWidth * 0.67 },
-      '46': { top: baseHeight * 0.85, left: baseWidth * 0.70 },
-      '47': { top: baseHeight * 0.85, left: baseWidth * 0.73 },
-      '48': { top: baseHeight * 0.85, left: baseWidth * 0.76 },
+      '41': { top: baseHeight * 0.88, left: baseWidth * 0.52 },
+      '42': { top: baseHeight * 0.88, left: baseWidth * 0.56 },
+      '43': { top: baseHeight * 0.88, left: baseWidth * 0.60 },
+      '44': { top: baseHeight * 0.88, left: baseWidth * 0.64 },
+      '45': { top: baseHeight * 0.88, left: baseWidth * 0.68 },
+      '46': { top: baseHeight * 0.88, left: baseWidth * 0.72 },
+      '47': { top: baseHeight * 0.88, left: baseWidth * 0.76 },
+      '48': { top: baseHeight * 0.88, left: baseWidth * 0.80 },
     };
   };
 
@@ -298,19 +297,36 @@ export default function Odontograma() {
                 }
               </Body>
             </View>
+            
+            {/* Botão de Ativar Edição - Reposicionado para o header */}
+            <TouchableOpacity
+              onPress={() => setModoVisualizacao(prev => !prev)}
+              className={`flex-row items-center justify-center px-4 py-3 rounded-xl shadow-lg border ${
+                modoVisualizacao 
+                  ? 'bg-dentfyAmber border-dentfyAmberHover' 
+                  : 'bg-dentfyGray800 border-dentfyGray700'
+              }`}
+              style={{
+                minWidth: 140,
+                elevation: 4,
+                shadowColor: modoVisualizacao ? colors.dentfyAmber : colors.dentfyGray700,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+              }}
+            >
+              <Ionicons 
+                name={modoVisualizacao ? "create" : "eye"} 
+                size={18} 
+                color={modoVisualizacao ? colors.dentfyGray900 : colors.dentfyTextSecondary} 
+              />
+              <Body className={`ml-2 font-semibold text-sm text-center flex-1 ${
+                modoVisualizacao ? 'text-dentfyGray900' : 'text-dentfyTextSecondary'
+              }`}>
+                {modoVisualizacao ? 'Editar' : 'Visualizar'}
+              </Body>
+            </TouchableOpacity>
           </View>
-        </View>
-
-        <View className="px-4 mt-4">
-          <TouchableOpacity
-            onPress={() => setModoVisualizacao(prev => !prev)}
-            className="bg-dentfyAmber rounded-2xl py-3 px-6 shadow-md"
-            style={{ alignSelf: 'center', minWidth: '60%' }}
-          >
-            <Body className="text-black font-semibold text-center text-base">
-              {modoVisualizacao ? 'Ativar Edição' : 'Modo Visualização'}
-            </Body>
-          </TouchableOpacity>
         </View>
 
         {/* Conteúdo Principal */}
