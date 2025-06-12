@@ -23,7 +23,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1A3446"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.izascr.dentfymobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,6 +33,18 @@
     "plugins": [
       "expo-router",
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8302ce70-4458-4e40-9442-db037ed8cfe9"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/8302ce70-4458-4e40-9442-db037ed8cfe9"
+    }
   }
 }
