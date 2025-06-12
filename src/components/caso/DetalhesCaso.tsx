@@ -59,28 +59,32 @@ export default function DetalhesCaso({ casoId }: DetalhesCasoProps) {
   };
 
   const getStatusStyle = (status: Caso["status"]) => {
-    switch (status) {
-      case "concluido":
-        return "bg-successGreen/10 text-successGreen border-successGreen/30";
-      case "em_andamento":
-        return "bg-dentfyAmber/10 text-dentfyAmber border-dentfyAmber/30";
-      case "arquivado":
-        return "bg-errorRed/10 text-errorRed border-errorRed/30";
-      default:
-        return "bg-dentfyGray600/10 text-dentfyGray600 border-dentfyGray600/30";
+    // Converte para minúsculo para comparação
+    const statusLower = status.toLowerCase();
+    
+    if (statusLower.includes('finalizado') || statusLower === 'concluido') {
+      return "bg-successGreen/20 border-successGreen";
+    } else if (statusLower.includes('andamento') || statusLower === 'em_andamento') {
+      return "bg-dentfyAmber/20 border-dentfyAmber";
+    } else if (statusLower.includes('arquivado') || statusLower === 'arquivado') {
+      return "bg-dentfyGray500/20 border-dentfyGray500";
+    } else {
+      return "bg-dentfyGray500/20 border-dentfyGray500";
     }
   };
 
   const getStatusText = (status: Caso["status"]) => {
-    switch (status) {
-      case "concluido":
-        return "Concluído";
-      case "em_andamento":
-        return "Em Andamento";
-      case "arquivado":
-        return "Arquivado";
-      default:
-        return status;
+    // Converte para minúsculo para comparação
+    const statusLower = status.toLowerCase();
+    
+    if (statusLower.includes('finalizado') || statusLower === 'concluido') {
+      return "Finalizado";
+    } else if (statusLower.includes('andamento') || statusLower === 'em_andamento') {
+      return "Em Andamento";
+    } else if (statusLower.includes('arquivado') || statusLower === 'arquivado') {
+      return "Arquivado";
+    } else {
+      return status;
     }
   };
 
@@ -147,7 +151,7 @@ export default function DetalhesCaso({ casoId }: DetalhesCasoProps) {
                 caso.status
               )}`}
             >
-              <Body size="small" className="text-current">
+              <Body size="small" className="text-white">
                 {getStatusText(caso.status)}
               </Body>
             </View>

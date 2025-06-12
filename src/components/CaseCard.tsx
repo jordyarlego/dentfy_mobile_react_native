@@ -56,6 +56,19 @@ interface CaseCardProps {
   onPress: () => void;
 }
 
+const getStatusStyle = (status: CasoStatusAPI) => {
+  switch (status) {
+    case 'Em andamento':
+      return 'bg-dentfyAmber/20 border-dentfyAmber';
+    case 'Finalizado':
+      return 'bg-successGreen/20 border-successGreen';
+    case 'Arquivado':
+      return 'bg-dentfyGray500/20 border-dentfyGray500';
+    default:
+      return 'bg-dentfyGray500/20 border-dentfyGray500';
+  }
+};
+
 export const CaseCard = ({ caso, onPress }: CaseCardProps) => {
   return (
     <TouchableOpacity
@@ -80,12 +93,8 @@ export const CaseCard = ({ caso, onPress }: CaseCardProps) => {
           </View>
         </View>
 
-        <View className={`px-3 py-1 rounded-full border ${
-          caso.status === 'Em andamento' ? 'bg-dentfyCyan/20 text-dentfyCyan border-dentfyCyan' :
-          caso.status === 'Finalizado' ? 'bg-dentfyAmber/20 text-dentfyAmber border-dentfyAmber' :
-          'bg-errorRed/20 text-errorRed border-errorRed'
-        }`}>
-          <Caption className="text-xs font-semibold text-current">
+        <View className={`px-3 py-1 rounded-full border ${getStatusStyle(caso.status)}`}>
+          <Caption className="text-xs font-semibold text-white">
             {caso.status}
           </Caption>
         </View>
